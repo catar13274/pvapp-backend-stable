@@ -1051,7 +1051,7 @@ async function uploadInvoiceFile(event) {
         const response = await fetch('/api/invoices/upload', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${authToken}`
             },
             body: formData
         });
