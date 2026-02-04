@@ -154,6 +154,9 @@ function switchView(viewName) {
             loadLaborCosts();
             loadExtraCosts();
             break;
+        case 'invoices':
+            loadInvoices();
+            break;
         case 'settings':
             loadSettings();
             break;
@@ -835,6 +838,162 @@ async function deleteSetting(key) {
     } catch (error) {
         alert('Error deleting setting: ' + error.message);
     }
+}
+
+// Invoices
+async function loadInvoices() {
+    try {
+        const invoices = await apiCall('/api/invoices/pending');
+        const list = document.getElementById('invoicesList');
+        
+        if (invoices.length === 0) {
+            list.innerHTML = '<p>No pending invoices found.</p>';
+            return;
+        }
+        
+        list.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Supplier</th>
+                        <th>Invoice Number</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Items</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${invoices.map(inv => `
+                        <tr>
+                            <td>${inv.id}</td>
+                            <td>${inv.supplier || '-'}</td>
+                            <td>${inv.invoice_number || '-'}</td>
+                            <td>${inv.invoice_date || '-'}</td>
+                            <td>${inv.total_amount ? inv.total_amount.toFixed(2) : '-'}</td>
+                            <td><span class="badge badge-${inv.status === 'CONFIRMED' ? 'success' : 'warning'}">${inv.status}</span></td>
+                            <td>${inv.items ? inv.items.length : 0}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="viewInvoice(${inv.id})">View</button>
+                                ${inv.status === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="confirmInvoice(${inv.id})">Confirm</button>` : ''}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        document.getElementById('invoicesList').innerHTML = `<p class="error">Error loading invoices: ${error.message}</p>`;
+    }
+}
+
+async function viewInvoice(invoiceId) {
+    try {
+        const invoice = await apiCall(`/api/invoices/${invoiceId}`);
+        const materials = await apiCall('/api/materials/');
+        
+        const html = `
+            <h2>Invoice Details</h2>
+            <div class="invoice-details">
+                <p><strong>Supplier:</strong> ${invoice.supplier || '-'}</p>
+                <p><strong>Invoice Number:</strong> ${invoice.invoice_number || '-'}</p>
+                <p><strong>Date:</strong> ${invoice.invoice_date || '-'}</p>
+                <p><strong>Total Amount:</strong> ${invoice.total_amount ? invoice.total_amount.toFixed(2) : '-'}</p>
+                <p><strong>Status:</strong> <span class="badge badge-${invoice.status === 'CONFIRMED' ? 'success' : 'warning'}">${invoice.status}</span></p>
+            </div>
+            
+            <h3>Items</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                        <th>Material</th>
+                        ${invoice.status === 'PENDING' ? '<th>Action</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${invoice.items.map(item => `
+                        <tr>
+                            <td>${item.description || '-'}</td>
+                            <td>${item.quantity}</td>
+                            <td>${item.unit_price ? item.unit_price.toFixed(2) : '-'}</td>
+                            <td>${item.total_price ? item.total_price.toFixed(2) : '-'}</td>
+                            <td>
+                                ${item.material_id ? 
+                                    materials.find(m => m.id === item.material_id)?.name || `Material #${item.material_id}` 
+                                    : 'Not mapped'}
+                            </td>
+                            ${invoice.status === 'PENDING' ? `
+                                <td>
+                                    ${!item.material_id ? `
+                                        <select onchange="mapInvoiceItem(${invoiceId}, ${item.id}, this.value)">
+                                            <option value="">Select Material</option>
+                                            ${materials.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
+                                        </select>
+                                    ` : 'Mapped ✓'}
+                                </td>
+                            ` : ''}
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            
+            ${invoice.status === 'PENDING' ? `
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="confirmInvoice(${invoiceId})">Confirm Invoice</button>
+                    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            ` : `
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            `}
+        `;
+        
+        showModal(html);
+    } catch (error) {
+        alert('Error loading invoice: ' + error.message);
+    }
+}
+
+async function mapInvoiceItem(invoiceId, itemId, materialId) {
+    if (!materialId) return;
+    
+    try {
+        await apiCall(`/api/invoices/${invoiceId}/items/${itemId}?material_id=${materialId}`, {
+            method: 'PUT'
+        });
+        alert('Item mapped successfully!');
+        viewInvoice(invoiceId); // Reload invoice view
+    } catch (error) {
+        alert('Error mapping item: ' + error.message);
+    }
+}
+
+async function confirmInvoice(invoiceId) {
+    if (!confirm('Are you sure you want to confirm this invoice? This will create stock movements for all mapped items.')) {
+        return;
+    }
+    
+    try {
+        const result = await apiCall(`/api/invoices/${invoiceId}/confirm`, {
+            method: 'POST'
+        });
+        alert(`Invoice confirmed! ${result.items_processed} items processed.`);
+        closeModal();
+        loadInvoices();
+    } catch (error) {
+        alert('Error confirming invoice: ' + error.message);
+    }
+}
+
+function refreshInvoices() {
+    loadInvoices();
 }
 
 // Modal

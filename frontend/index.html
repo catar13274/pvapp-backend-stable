@@ -44,6 +44,7 @@
                 <li><a href="#" data-view="projects" class="nav-link">🏗️ Projects</a></li>
                 <li><a href="#" data-view="stock" class="nav-link">📋 Stock</a></li>
                 <li><a href="#" data-view="costs" class="nav-link">💰 Costs</a></li>
+                <li><a href="#" data-view="invoices" class="nav-link">🧾 Invoices</a></li>
                 <li><a href="#" data-view="settings" class="nav-link">⚙️ Settings</a></li>
             </ul>
             <button id="logoutBtn" class="btn btn-secondary">Logout</button>
@@ -125,6 +126,15 @@
                     <button class="btn btn-primary" onclick="showSettingForm()">+ Add Setting</button>
                 </div>
                 <div id="settingsList" class="data-table"></div>
+            </div>
+
+            <!-- Invoices View -->
+            <div id="invoicesView" class="view">
+                <div class="view-header">
+                    <h1>Invoices Management</h1>
+                    <button class="btn btn-primary" onclick="refreshInvoices()">🔄 Refresh</button>
+                </div>
+                <div id="invoicesList" class="data-table"></div>
             </div>
         </main>
     </div>
