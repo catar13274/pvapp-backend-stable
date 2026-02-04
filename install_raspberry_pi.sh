@@ -61,6 +61,7 @@ if [ -d "$INSTALL_DIR/.git" ]; then
     echo "Git repository already exists. Updating..."
     cd "$INSTALL_DIR"
     sudo -u $ACTUAL_USER git pull
+    REPO_EXISTS=true
 elif [ -d "$INSTALL_DIR" ] && [ "$(ls -A $INSTALL_DIR 2>/dev/null)" ]; then
     # Directory exists and is not empty, but no git repo
     echo ""
@@ -77,20 +78,17 @@ elif [ -d "$INSTALL_DIR" ] && [ "$(ls -A $INSTALL_DIR 2>/dev/null)" ]; then
         echo "Removing existing directory..."
         rm -rf "$INSTALL_DIR"
         echo "Directory removed."
+        REPO_EXISTS=false
     else
         echo "Installation cancelled by user."
         exit 1
     fi
+else
+    REPO_EXISTS=false
 fi
 
-# Create directories (will only create if they don't exist)
-echo "Creating installation directories..."
-mkdir -p "$INSTALL_DIR"
-mkdir -p "$DATA_DIR"
-mkdir -p "$BACKUP_DIR"
-
 # Clone repository if not already present
-if [ ! -d "$INSTALL_DIR/.git" ]; then
+if [ "$REPO_EXISTS" != "true" ]; then
     echo ""
     echo "Step 4: Cloning repository..."
     read -p "Enter repository URL (or press Enter for default): " REPO_URL
@@ -98,12 +96,19 @@ if [ ! -d "$INSTALL_DIR/.git" ]; then
         REPO_URL="https://github.com/catar13274/pvapp-backend-stable.git"
     fi
     
+    # Clone into /opt - git will create the pvapp directory
     cd /opt
     sudo -u $ACTUAL_USER git clone "$REPO_URL" pvapp
     cd "$INSTALL_DIR"
-else
-    cd "$INSTALL_DIR"
 fi
+
+# Ensure we're in the install directory
+cd "$INSTALL_DIR"
+
+# Create data directories (will only create if they don't exist)
+echo "Creating data directories..."
+mkdir -p "$DATA_DIR"
+mkdir -p "$BACKUP_DIR"
 
 echo ""
 echo "Step 5: Creating Python virtual environment..."
