@@ -449,12 +449,48 @@ async function viewBalance(projectId) {
                 </tr>
             </table>
             <div style="margin-top: 20px;">
-                <a href="/api/balance/${projectId}/pdf" target="_blank" class="btn btn-primary">Download PDF</a>
+                <button onclick="downloadBalancePDF(${projectId})" class="btn btn-primary">Download PDF</button>
             </div>
         `;
         showModal(html);
     } catch (error) {
         alert('Error loading balance: ' + error.message);
+    }
+}
+
+async function downloadBalancePDF(projectId) {
+    try {
+        const response = await fetch(`${API_BASE}/api/balance/${projectId}/pdf`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                handleLogout();
+                throw new Error('Authentication required');
+            }
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        // Get the PDF blob
+        const blob = await response.blob();
+        
+        // Create a download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `balance_project_${projectId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        alert('Error downloading PDF: ' + error.message);
     }
 }
 
