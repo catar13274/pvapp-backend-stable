@@ -158,7 +158,7 @@ def confirm_invoice(
                 material_id=item.material_id,
                 movement_type="IN",
                 quantity=item.quantity,
-                price_net=item.unit_price * item.quantity if item.unit_price else 0,
+                price_net=item.unit_price,
                 invoice_number=invoice.invoice_number,
                 notes=f"From invoice {invoice.invoice_number}",
                 created_by=current_user.id

@@ -116,6 +116,9 @@ Complete FastAPI backend for PV (Photovoltaic) installation management with:
 ## Environment Variables
 
 - `PVAPP_DB_URL` - Database URL (default: `sqlite:///./db.sqlite3`)
+- `SECRET_KEY` - Secret key for JWT token signing (required for production)
+- `ADMIN_PASSWORD` - Initial admin password (if not set, a random password is generated)
+- `CORS_ORIGINS` - Comma-separated list of allowed CORS origins (default: `*`)
 
 ## Development
 

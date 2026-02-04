@@ -4,6 +4,7 @@ Initialize the database and create a default admin user
 """
 import os
 import sys
+import secrets
 from sqlmodel import Session, select
 
 # Add parent directory to path
@@ -25,18 +26,28 @@ def create_admin_user():
         
         if not admin_user:
             print("Creating default admin user...")
+            
+            # Get password from environment or generate a random one
+            admin_password = os.getenv("ADMIN_PASSWORD")
+            if not admin_password:
+                # Generate a secure random password
+                admin_password = secrets.token_urlsafe(16)
+                print(f"  Generated secure password: {admin_password}")
+                print("  ⚠️  Save this password! It won't be shown again.")
+                print("  ⚠️  Or set ADMIN_PASSWORD environment variable to use a custom password")
+            
             admin = User(
                 username="admin",
                 email="admin@pvapp.local",
                 role="ADMIN",
-                hashed_password=get_password_hash("admin123")
+                hashed_password=get_password_hash(admin_password)
             )
             session.add(admin)
             session.commit()
             print("✓ Admin user created")
             print("  Username: admin")
-            print("  Password: admin123")
-            print("  ⚠️  Please change the password after first login!")
+            if os.getenv("ADMIN_PASSWORD"):
+                print("  Password: (from ADMIN_PASSWORD env variable)")
         else:
             print("✓ Admin user already exists")
         

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
+import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
@@ -9,7 +10,10 @@ from app.models import User
 from app.database import get_session
 
 # Security configuration
-SECRET_KEY = "your-secret-key-change-in-production"  # Should be in env variable
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    print("WARNING: SECRET_KEY environment variable not set. Using a default key. This is insecure for production!")
+    SECRET_KEY = "insecure-default-key-please-change-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from app.database import init_db
 from app.api import purchases, auth, materials, projects, stock, costs, balance, settings, invoices
 
@@ -9,10 +10,11 @@ app = FastAPI(
     description="PV installation management system"
 )
 
-# Add CORS middleware
+# Add CORS middleware with configurable origins
+allowed_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
