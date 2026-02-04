@@ -321,7 +321,7 @@ def validate_invoice_items(
 ):
     """
     Validate and update invoice items with user-confirmed material mappings
-    Also creates new materials if needed
+    Also creates new materials if needed and preserves price/date information
     
     validated_items format:
     [
@@ -342,12 +342,15 @@ def validate_invoice_items(
         }
     ]
     """
+    from app.models import MaterialPrice
+    
     invoice = session.get(Invoice, invoice_id)
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     
     created_materials = []
     updated_items = []
+    created_prices = []
     
     for validation in validated_items:
         item_id = validation.get("item_id")
@@ -355,6 +358,8 @@ def validate_invoice_items(
         
         if not item or item.invoice_id != invoice_id:
             continue
+        
+        material = None
         
         if validation.get("create_new"):
             # Create new material
@@ -372,6 +377,7 @@ def validate_invoice_items(
             
             created_materials.append(new_material)
             item.material_id = new_material.id
+            material = new_material
         else:
             # Use existing material
             material_id = validation.get("material_id")
@@ -379,6 +385,31 @@ def validate_invoice_items(
                 material = session.get(Material, material_id)
                 if material:
                     item.material_id = material_id
+        
+        # Create price entry for the material (preserves price and date from invoice)
+        if material and item.unit_price is not None and item.unit_price > 0:
+            # Parse invoice date or use current date
+            from datetime import datetime
+            price_date = datetime.utcnow()
+            if invoice.invoice_date:
+                try:
+                    # Try to parse invoice date
+                    if '-' in invoice.invoice_date:
+                        price_date = datetime.strptime(invoice.invoice_date, '%Y-%m-%d')
+                    elif '.' in invoice.invoice_date:
+                        price_date = datetime.strptime(invoice.invoice_date, '%d.%m.%Y')
+                except:
+                    pass  # Use current date if parsing fails
+            
+            material_price = MaterialPrice(
+                material_id=material.id,
+                price_net=item.unit_price,
+                supplier=invoice.supplier or "Unknown",
+                invoice_number=invoice.invoice_number or "",
+                date=price_date
+            )
+            session.add(material_price)
+            created_prices.append(material_price)
         
         session.add(item)
         updated_items.append(item)
@@ -393,6 +424,7 @@ def validate_invoice_items(
         "invoice_id": invoice_id,
         "created_materials": len(created_materials),
         "updated_items": len(updated_items),
+        "created_prices": len(created_prices),
         "materials": [
             {
                 "id": m.id,
