@@ -39,37 +39,37 @@
                 <p id="currentUser"></p>
             </div>
             <ul class="nav-menu">
-                <li><a href="#" data-view="dashboard" class="nav-link active">📊 Dashboard</a></li>
-                <li><a href="#" data-view="materials" class="nav-link">📦 Materials</a></li>
-                <li><a href="#" data-view="projects" class="nav-link">🏗️ Projects</a></li>
-                <li><a href="#" data-view="stock" class="nav-link">📋 Stock</a></li>
-                <li><a href="#" data-view="costs" class="nav-link">💰 Costs</a></li>
-                <li><a href="#" data-view="invoices" class="nav-link">🧾 Invoices</a></li>
-                <li><a href="#" data-view="settings" class="nav-link">⚙️ Settings</a></li>
+                <li><a href="#" data-view="dashboard" class="nav-link active">📊 Panou de control</a></li>
+                <li><a href="#" data-view="materials" class="nav-link">📦 Materiale</a></li>
+                <li><a href="#" data-view="projects" class="nav-link">🏗️ Proiecte</a></li>
+                <li><a href="#" data-view="stock" class="nav-link">📋 Stoc</a></li>
+                <li><a href="#" data-view="costs" class="nav-link">💰 Costuri</a></li>
+                <li><a href="#" data-view="invoices" class="nav-link">🧾 Facturi</a></li>
+                <li><a href="#" data-view="settings" class="nav-link">⚙️ Setări</a></li>
             </ul>
-            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            <button id="logoutBtn" class="btn btn-secondary">Deconectare</button>
         </nav>
 
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Dashboard View -->
             <div id="dashboardView" class="view active">
-                <h1>Dashboard</h1>
+                <h1>Panou de control</h1>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>Materials</h3>
+                        <h3>Materiale</h3>
                         <p class="stat-value" id="statMaterials">-</p>
                     </div>
                     <div class="stat-card">
-                        <h3>Projects</h3>
+                        <h3>Proiecte</h3>
                         <p class="stat-value" id="statProjects">-</p>
                     </div>
                     <div class="stat-card">
-                        <h3>Low Stock Items</h3>
+                        <h3>Articole Stoc Scăzut</h3>
                         <p class="stat-value" id="statLowStock">-</p>
                     </div>
                     <div class="stat-card">
-                        <h3>Active Projects</h3>
+                        <h3>Proiecte Active</h3>
                         <p class="stat-value" id="statActiveProjects">-</p>
                     </div>
                 </div>
@@ -78,7 +78,7 @@
             <!-- Materials View -->
             <div id="materialsView" class="view">
                 <div class="view-header">
-                    <h1>Materials Management</h1>
+                    <h1>Gestionare Materiale</h1>
                     <button class="btn btn-primary" onclick="showMaterialForm()">+ Add Material</button>
                 </div>
                 <div id="materialsList" class="data-table"></div>
@@ -87,7 +87,7 @@
             <!-- Projects View -->
             <div id="projectsView" class="view">
                 <div class="view-header">
-                    <h1>Projects</h1>
+                    <h1>Proiecte</h1>
                     <button class="btn btn-primary" onclick="showProjectForm()">+ Add Project</button>
                 </div>
                 <div id="projectsList" class="data-table"></div>
@@ -96,7 +96,7 @@
             <!-- Stock View -->
             <div id="stockView" class="view">
                 <div class="view-header">
-                    <h1>Stock Movements</h1>
+                    <h1>Mișcări Stoc</h1>
                     <button class="btn btn-primary" onclick="showStockForm()">+ Add Movement</button>
                 </div>
                 <div id="stockList" class="data-table"></div>
@@ -104,7 +104,7 @@
 
             <!-- Costs View -->
             <div id="costsView" class="view">
-                <h1>Costs Management</h1>
+                <h1>Gestionare Costuri</h1>
                 <div class="tabs">
                     <button class="tab-btn active" onclick="switchCostTab('labor')">Labor Costs</button>
                     <button class="tab-btn" onclick="switchCostTab('extra')">Extra Costs</button>
