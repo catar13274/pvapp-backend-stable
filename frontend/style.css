@@ -376,6 +376,11 @@ tr:hover {
     color: #721c24;
 }
 
+.badge-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
 /* Invoice details */
 .invoice-details {
     background-color: #f8f9fa;
@@ -386,6 +391,48 @@ tr:hover {
 
 .invoice-details p {
     margin: 8px 0;
+}
+
+/* File upload styles */
+input[type="file"] {
+    display: block;
+    margin: 10px 0;
+    padding: 10px;
+    border: 2px dashed #4CAF50;
+    border-radius: 5px;
+    width: 100%;
+    cursor: pointer;
+}
+
+input[type="file"]:hover {
+    border-color: #45a049;
+    background-color: #f9f9f9;
+}
+
+.progress-bar {
+    width: 100%;
+    background-color: #f3f3f3;
+    border-radius: 5px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+#uploadProgress {
+    margin: 20px 0;
+}
+
+#uploadStatus {
+    text-align: center;
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+/* Form group improvements */
+.form-group small {
+    display: block;
+    color: #666;
+    margin-top: 5px;
+    font-size: 0.9em;
 }
 
 /* Action buttons in tables */

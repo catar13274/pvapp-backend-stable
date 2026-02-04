@@ -847,7 +847,7 @@ async function loadInvoices() {
         const list = document.getElementById('invoicesList');
         
         if (invoices.length === 0) {
-            list.innerHTML = '<p>No pending invoices found.</p>';
+            list.innerHTML = '<p>No pending invoices found. Click "Upload Invoice" to add one.</p>';
             return;
         }
         
@@ -866,21 +866,25 @@ async function loadInvoices() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${invoices.map(inv => `
+                    ${invoices.map(inv => {
+                        const statusClass = inv.status === 'CONFIRMED' ? 'success' : 
+                                          inv.status === 'VALIDATED' ? 'info' : 
+                                          inv.status === 'PARSED' ? 'warning' : 'warning';
+                        return `
                         <tr>
                             <td>${inv.id}</td>
                             <td>${inv.supplier || '-'}</td>
                             <td>${inv.invoice_number || '-'}</td>
                             <td>${inv.invoice_date || '-'}</td>
                             <td>${inv.total_amount ? inv.total_amount.toFixed(2) : '-'}</td>
-                            <td><span class="badge badge-${inv.status === 'CONFIRMED' ? 'success' : 'warning'}">${inv.status}</span></td>
+                            <td><span class="badge badge-${statusClass}">${inv.status}</span></td>
                             <td>${inv.items ? inv.items.length : 0}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" onclick="viewInvoice(${inv.id})">View</button>
-                                ${inv.status === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="confirmInvoice(${inv.id})">Confirm</button>` : ''}
+                                ${inv.status === 'PENDING' || inv.status === 'VALIDATED' ? `<button class="btn btn-sm btn-success" onclick="confirmInvoice(${inv.id})">Confirm</button>` : ''}
                             </td>
                         </tr>
-                    `).join('')}
+                    `}).join('')}
                 </tbody>
             </table>
         `;
@@ -994,6 +998,237 @@ async function confirmInvoice(invoiceId) {
 
 function refreshInvoices() {
     loadInvoices();
+}
+
+// Invoice File Upload Functions
+function showUploadInvoiceForm() {
+    const html = `
+        <h2>Upload Invoice File</h2>
+        <p>Upload invoice in PDF, DOC, TXT, or XML format. The system will automatically extract materials.</p>
+        
+        <form id="uploadInvoiceForm" onsubmit="uploadInvoiceFile(event)">
+            <div class="form-group">
+                <label>Select File:</label>
+                <input type="file" id="invoiceFile" accept=".pdf,.doc,.docx,.txt,.xml" required>
+                <small>Supported formats: PDF, DOC, DOCX, TXT, XML (Max 10MB)</small>
+            </div>
+            
+            <div id="uploadProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progressBar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>
+                </div>
+                <p id="uploadStatus">Uploading...</p>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Upload & Parse</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    `;
+    showModal(html);
+}
+
+async function uploadInvoiceFile(event) {
+    event.preventDefault();
+    
+    const fileInput = document.getElementById('invoiceFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file');
+        return;
+    }
+    
+    // Show progress
+    document.getElementById('uploadProgress').style.display = 'block';
+    document.getElementById('uploadStatus').textContent = 'Uploading...';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/api/invoices/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Upload failed');
+        }
+        
+        const result = await response.json();
+        document.getElementById('uploadStatus').textContent = 'Parsing complete!';
+        
+        // Show validation interface
+        setTimeout(() => {
+            showInvoiceValidation(result);
+        }, 500);
+        
+    } catch (error) {
+        document.getElementById('uploadStatus').textContent = 'Error: ' + error.message;
+        alert('Error uploading invoice: ' + error.message);
+    }
+}
+
+async function showInvoiceValidation(uploadResult) {
+    const materials = await apiCall('/api/materials/');
+    const invoice = uploadResult.invoice;
+    const items = uploadResult.items;
+    
+    const html = `
+        <h2>Validate Invoice Items</h2>
+        <div class="invoice-details">
+            <p><strong>Supplier:</strong> ${invoice.supplier || 'Not detected'}</p>
+            <p><strong>Invoice Number:</strong> ${invoice.invoice_number || 'Not detected'}</p>
+            <p><strong>Date:</strong> ${invoice.invoice_date || 'Not detected'}</p>
+            <p><strong>Total:</strong> ${invoice.total_amount ? invoice.total_amount.toFixed(2) + ' RON' : 'Not detected'}</p>
+        </div>
+        
+        <h3>Extracted Items (${items.length})</h3>
+        <p>Please validate the materials extracted from the invoice. You can match to existing materials or create new ones.</p>
+        
+        <form id="validationForm" onsubmit="submitInvoiceValidation(event, ${invoice.id})">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                        <th>Action</th>
+                        <th>Material</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map((item, index) => {
+                        const suggestedMaterial = item.suggested_material_id ? 
+                            materials.find(m => m.id === item.suggested_material_id) : null;
+                        
+                        return `
+                            <tr id="item-row-${index}">
+                                <td>${item.description || '-'}</td>
+                                <td>${item.quantity || 0}</td>
+                                <td>${item.unit || '-'}</td>
+                                <td>${item.unit_price ? item.unit_price.toFixed(2) : '-'}</td>
+                                <td>${item.total_price ? item.total_price.toFixed(2) : '-'}</td>
+                                <td>
+                                    <select id="action-${index}" onchange="toggleMaterialOptions(${index})">
+                                        <option value="existing" ${suggestedMaterial ? 'selected' : ''}>Use Existing</option>
+                                        <option value="new">Create New</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <div id="existing-${index}" style="display: ${suggestedMaterial ? 'block' : 'block'};">
+                                        <select id="material-${index}">
+                                            <option value="">Select Material</option>
+                                            ${materials.map(m => `
+                                                <option value="${m.id}" ${m.id === item.suggested_material_id ? 'selected' : ''}>
+                                                    ${m.name} ${m.id === item.suggested_material_id ? `(${Math.round(item.match_confidence * 100)}% match)` : ''}
+                                                </option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <div id="new-${index}" style="display: none;">
+                                        <input type="text" id="newname-${index}" placeholder="Material Name" value="${item.description || ''}" style="margin-bottom: 5px;">
+                                        <input type="text" id="newcat-${index}" placeholder="Category" value="General" style="margin-bottom: 5px;">
+                                        <input type="text" id="newunit-${index}" placeholder="Unit" value="${item.unit || 'pcs'}" style="margin-bottom: 5px;">
+                                        <input type="number" id="newmin-${index}" placeholder="Min Stock" value="0" style="margin-bottom: 5px;">
+                                    </div>
+                                    <input type="hidden" id="itemid-${index}" value="${item.id}">
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+            
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-success">✓ Validate & Confirm</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    `;
+    
+    showModal(html);
+}
+
+function toggleMaterialOptions(index) {
+    const action = document.getElementById(`action-${index}`).value;
+    document.getElementById(`existing-${index}`).style.display = action === 'existing' ? 'block' : 'none';
+    document.getElementById(`new-${index}`).style.display = action === 'new' ? 'block' : 'none';
+}
+
+async function submitInvoiceValidation(event, invoiceId) {
+    event.preventDefault();
+    
+    const form = document.getElementById('validationForm');
+    const rows = form.querySelectorAll('tbody tr');
+    const validatedItems = [];
+    
+    rows.forEach((row, index) => {
+        const action = document.getElementById(`action-${index}`).value;
+        const itemId = parseInt(document.getElementById(`itemid-${index}`).value);
+        
+        if (action === 'existing') {
+            const materialId = parseInt(document.getElementById(`material-${index}`).value);
+            if (materialId) {
+                validatedItems.push({
+                    item_id: itemId,
+                    material_id: materialId,
+                    create_new: false
+                });
+            }
+        } else if (action === 'new') {
+            const name = document.getElementById(`newname-${index}`).value;
+            const category = document.getElementById(`newcat-${index}`).value;
+            const unit = document.getElementById(`newunit-${index}`).value;
+            const minStock = parseFloat(document.getElementById(`newmin-${index}`).value) || 0;
+            
+            if (name) {
+                validatedItems.push({
+                    item_id: itemId,
+                    create_new: true,
+                    new_material: {
+                        name: name,
+                        category: category,
+                        unit: unit,
+                        minimum_stock: minStock
+                    }
+                });
+            }
+        }
+    });
+    
+    if (validatedItems.length === 0) {
+        alert('Please select or create materials for at least one item');
+        return;
+    }
+    
+    try {
+        const result = await apiCall(`/api/invoices/${invoiceId}/validate-items`, {
+            method: 'POST',
+            body: JSON.stringify(validatedItems)
+        });
+        
+        alert(`Success! ${result.created_materials} new materials created, ${result.updated_items} items mapped.`);
+        
+        // Ask if user wants to confirm invoice now
+        if (confirm('Do you want to confirm this invoice and create stock movements now?')) {
+            await confirmInvoice(invoiceId);
+        } else {
+            closeModal();
+            loadInvoices();
+        }
+        
+    } catch (error) {
+        alert('Error validating items: ' + error.message);
+    }
 }
 
 // Modal
