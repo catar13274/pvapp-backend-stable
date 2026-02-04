@@ -1,0 +1,41 @@
+[Unit]
+Description=PV Management App
+After=network.target
+Documentation=https://github.com/catar13274/pvapp-backend-stable
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/pvapp
+Environment="PATH=/opt/pvapp/.venv/bin"
+EnvironmentFile=/opt/pvapp/.env
+
+# Start the application
+ExecStart=/opt/pvapp/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pvapp/data /opt/pvapp/backups
+
+# Resource limits (adjust based on your Raspberry Pi model)
+# For Pi 3: --workers 1, MemoryMax=512M
+# For Pi 4 (2GB): --workers 2, MemoryMax=1G
+# For Pi 4 (4GB+): --workers 3-4, MemoryMax=2G
+MemoryMax=1G
+CPUQuota=150%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pvapp
+
+[Install]
+WantedBy=multi-user.target

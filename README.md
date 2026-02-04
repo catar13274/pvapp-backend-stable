@@ -2,6 +2,20 @@
 
 Complete full-stack application for PV (Photovoltaic) installation management with:
 
+## 🌟 Perfect for Raspberry Pi!
+
+This application runs perfectly on Raspberry Pi, making it ideal for on-site installation management!
+
+**Quick Raspberry Pi Installation:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/main/install_raspberry_pi.sh -o install.sh
+sudo bash install.sh
+```
+
+📖 **Detailed guides:**
+- [English Raspberry Pi Guide](RASPBERRY_PI.md) - Complete deployment guide
+- [Ghid în Română](INSTALARE_ROMANA.md) - Ghid complet de instalare
+
 ## Frontend Features
 
 - **Modern Web Interface**: Clean, responsive UI built with vanilla JavaScript, HTML, and CSS
