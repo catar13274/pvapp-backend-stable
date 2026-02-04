@@ -102,14 +102,17 @@ class CompanySetting(SQLModel, table=True):
     description: Optional[str] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-# Invoice models (basic structure)
+# Invoice models (enhanced for file upload)
 class Invoice(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     supplier: Optional[str] = None
     invoice_number: Optional[str] = None
     invoice_date: Optional[str] = None
     total_amount: Optional[float] = None
-    status: str = Field(default="PENDING")  # PENDING, CONFIRMED
+    status: str = Field(default="PENDING")  # PENDING, PARSED, VALIDATED, CONFIRMED
+    file_path: Optional[str] = None  # Path to uploaded file
+    file_type: Optional[str] = None  # PDF, DOC, TXT, XML
+    raw_text: Optional[str] = None  # Extracted text from file
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class InvoiceItem(SQLModel, table=True):
@@ -118,8 +121,11 @@ class InvoiceItem(SQLModel, table=True):
     material_id: Optional[int] = Field(default=None, foreign_key="material.id")
     description: Optional[str] = None
     quantity: float = 0.0
+    unit: Optional[str] = None  # Unit of measurement
     unit_price: Optional[float] = None
     total_price: Optional[float] = None
+    suggested_material_id: Optional[int] = None  # AI/fuzzy matched material
+    match_confidence: Optional[float] = None  # Confidence score for match
 
 # Legacy Purchase models (keep for compatibility)
 class Purchase(SQLModel, table=True):
