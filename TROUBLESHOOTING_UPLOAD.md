@@ -1,5 +1,63 @@
 # Troubleshooting Invoice Upload Feature
 
+## 🔧 QUICK FIX: Database Schema Error (Most Common)
+
+### Symptom
+When uploading an invoice, you see:
+```
+Error: Error processing file: (sqlite3.OperationalError) table invoice has no column named file_path
+```
+
+### Quick Fix
+```bash
+cd /opt/pvapp
+./fix_database.sh
+sudo systemctl restart pvapp
+```
+
+**What it does:** Adds missing columns to your database for the invoice upload feature.
+
+### Alternative Methods
+
+**Method 1: Use the fix script (Recommended)**
+```bash
+cd /opt/pvapp
+./fix_database.sh
+```
+
+**Method 2: Run migration manually**
+```bash
+cd /opt/pvapp
+source .venv/bin/activate
+python scripts/migrate_db.py
+```
+
+**Method 3: Reinitialize database**
+```bash
+cd /opt/pvapp
+source .venv/bin/activate
+python scripts/init_db.py
+```
+
+**Method 4: Use the update script**
+```bash
+cd /opt/pvapp
+./update.sh
+# Now includes automatic migration
+```
+
+### Why This Happens
+- You have an existing database from before the invoice upload feature
+- The new feature requires additional database columns
+- These columns need to be added via migration
+
+### After Fix
+After running the fix, restart your application:
+- **Systemd**: `sudo systemctl restart pvapp`
+- **Manual**: Stop (Ctrl+C) and restart uvicorn
+
+---
+
 ## 405 Method Not Allowed Error
 
 ### Symptom

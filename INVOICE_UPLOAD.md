@@ -1,5 +1,23 @@
 # Invoice File Upload Feature
 
+## ⚠️ Troubleshooting
+
+**Getting a database error when uploading?**
+```
+Error: table invoice has no column named file_path
+```
+
+**Quick Fix:**
+```bash
+cd /opt/pvapp
+./fix_database.sh
+sudo systemctl restart pvapp
+```
+
+**For detailed troubleshooting, see:** [TROUBLESHOOTING_UPLOAD.md](TROUBLESHOOTING_UPLOAD.md)
+
+---
+
 ## Overview
 
 The PV Management App now supports automatic invoice processing through file upload. Upload invoices in PDF, DOC, TXT, or XML format, and the system will automatically extract materials, suggest matches with existing inventory, and allow you to validate before creating stock entries.
