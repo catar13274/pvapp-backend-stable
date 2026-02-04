@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
 from app.database import init_db
 from app.api import purchases, auth, materials, projects, stock, costs, balance, settings, invoices
@@ -38,3 +40,19 @@ app.include_router(purchases.router)  # Keep legacy purchases endpoint
 @app.get("/api/v1")
 def root():
     return {"ok": True}
+
+# Mount static files for frontend
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+# Serve frontend
+@app.get("/")
+async def serve_frontend():
+    return FileResponse("frontend/index.html")
+
+# Catch-all route for SPA (Single Page Application)
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    # Don't catch API routes
+    if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi"):
+        return {"error": "Not found"}
+    return FileResponse("frontend/index.html")

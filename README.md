@@ -1,6 +1,21 @@
-# PV Management App Backend
+# PV Management App
 
-Complete FastAPI backend for PV (Photovoltaic) installation management with:
+Complete full-stack application for PV (Photovoltaic) installation management with:
+
+## Frontend Features
+
+- **Modern Web Interface**: Clean, responsive UI built with vanilla JavaScript, HTML, and CSS
+- **Authentication**: Secure login with JWT tokens
+- **Dashboard**: Overview with key statistics (materials, projects, stock alerts)
+- **Materials Management**: Add, view, and manage materials with stock tracking
+- **Projects Management**: Create and track PV installation projects
+- **Stock Management**: Track IN/OUT stock movements with automatic inventory updates
+- **Cost Tracking**: Record labor and extra costs for projects
+- **Balance Reports**: View detailed project cost breakdowns with VAT calculations
+- **Company Settings**: Configure VAT rates and other company settings
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+
+## Backend Features
 
 - **Authentication**: JWT-based authentication with role-based access (ADMIN, INSTALLER)
 - **Materials Management**: CRUD operations, pricing history, stock alerts
@@ -41,7 +56,16 @@ Complete FastAPI backend for PV (Photovoltaic) installation management with:
    ./run.sh
    ```
 
-4. **Test the API:**
+4. **Access the application:**
+   - **Web Interface**: http://127.0.0.1:8000
+   - **API Documentation**: http://127.0.0.1:8000/docs
+   - **Alternative API Docs**: http://127.0.0.1:8000/redoc
+   
+   Default login credentials:
+   - Username: `admin`
+   - Password: From `ADMIN_PASSWORD` env variable or auto-generated
+
+5. **Test the API (optional):**
    ```bash
    # Login to get token
    curl -X POST "http://127.0.0.1:8000/api/auth/login" \
@@ -56,6 +80,22 @@ Complete FastAPI backend for PV (Photovoltaic) installation management with:
    **Interactive API documentation:**
    - Swagger UI: http://127.0.0.1:8000/docs
    - ReDoc: http://127.0.0.1:8000/redoc
+
+## Frontend Structure
+
+```
+frontend/
+├── index.html    # Main HTML with all views
+├── style.css     # Complete styling
+└── app.js        # JavaScript for API integration and UI logic
+```
+
+The frontend is a Single Page Application (SPA) that:
+- Communicates with the backend API
+- Stores JWT tokens in localStorage
+- Provides modal forms for data entry
+- Updates views dynamically without page reloads
+- Shows real-time statistics and data
 
 ## API Endpoints
 

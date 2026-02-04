@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PV Management App</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <h1>🌞 PV Management App</h1>
+            <p class="subtitle">PV Installation Management System</p>
+            <div class="login-box">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <div id="loginError" class="error"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="appScreen" class="screen" style="display: none;">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🌞 PV App</h2>
+                <p id="currentUser"></p>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#" data-view="dashboard" class="nav-link active">📊 Dashboard</a></li>
+                <li><a href="#" data-view="materials" class="nav-link">📦 Materials</a></li>
+                <li><a href="#" data-view="projects" class="nav-link">🏗️ Projects</a></li>
+                <li><a href="#" data-view="stock" class="nav-link">📋 Stock</a></li>
+                <li><a href="#" data-view="costs" class="nav-link">💰 Costs</a></li>
+                <li><a href="#" data-view="settings" class="nav-link">⚙️ Settings</a></li>
+            </ul>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard View -->
+            <div id="dashboardView" class="view active">
+                <h1>Dashboard</h1>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Materials</h3>
+                        <p class="stat-value" id="statMaterials">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Projects</h3>
+                        <p class="stat-value" id="statProjects">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Low Stock Items</h3>
+                        <p class="stat-value" id="statLowStock">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Projects</h3>
+                        <p class="stat-value" id="statActiveProjects">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Materials View -->
+            <div id="materialsView" class="view">
+                <div class="view-header">
+                    <h1>Materials Management</h1>
+                    <button class="btn btn-primary" onclick="showMaterialForm()">+ Add Material</button>
+                </div>
+                <div id="materialsList" class="data-table"></div>
+            </div>
+
+            <!-- Projects View -->
+            <div id="projectsView" class="view">
+                <div class="view-header">
+                    <h1>Projects</h1>
+                    <button class="btn btn-primary" onclick="showProjectForm()">+ Add Project</button>
+                </div>
+                <div id="projectsList" class="data-table"></div>
+            </div>
+
+            <!-- Stock View -->
+            <div id="stockView" class="view">
+                <div class="view-header">
+                    <h1>Stock Movements</h1>
+                    <button class="btn btn-primary" onclick="showStockForm()">+ Add Movement</button>
+                </div>
+                <div id="stockList" class="data-table"></div>
+            </div>
+
+            <!-- Costs View -->
+            <div id="costsView" class="view">
+                <h1>Costs Management</h1>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchCostTab('labor')">Labor Costs</button>
+                    <button class="tab-btn" onclick="switchCostTab('extra')">Extra Costs</button>
+                </div>
+                <div id="laborCosts" class="tab-content active">
+                    <button class="btn btn-primary" onclick="showLaborForm()">+ Add Labor Cost</button>
+                    <div id="laborList" class="data-table"></div>
+                </div>
+                <div id="extraCosts" class="tab-content">
+                    <button class="btn btn-primary" onclick="showExtraForm()">+ Add Extra Cost</button>
+                    <div id="extraList" class="data-table"></div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settingsView" class="view">
+                <div class="view-header">
+                    <h1>Company Settings</h1>
+                    <button class="btn btn-primary" onclick="showSettingForm()">+ Add Setting</button>
+                </div>
+                <div id="settingsList" class="data-table"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for forms -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
