@@ -324,13 +324,49 @@ Potential improvements:
 - Email import from suppliers
 - Direct integration with supplier APIs
 
+## Troubleshooting
+
+### 405 Method Not Allowed Error
+
+**Problem:** Upload button returns "405 Method Not Allowed" error.
+
+**Cause:** Server was not restarted after the upload feature was added.
+
+**Solution:**
+```bash
+# For systemd service
+sudo systemctl restart pvapp
+
+# For manual uvicorn
+# Stop with Ctrl+C, then:
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**Verification:**
+```bash
+# Check if endpoint exists
+curl -X POST http://localhost:8000/api/invoices/upload
+# Should return 401 (unauthorized) not 405 (method not allowed)
+```
+
+### Other Common Issues
+
+For detailed troubleshooting including:
+- Permission errors
+- Parsing failures
+- File size limits
+- Browser cache issues
+
+See: **[TROUBLESHOOTING_UPLOAD.md](TROUBLESHOOTING_UPLOAD.md)**
+
 ## Support
 
 For issues or questions:
-1. Check troubleshooting section above
+1. **First**: Check [TROUBLESHOOTING_UPLOAD.md](TROUBLESHOOTING_UPLOAD.md)
 2. Review example formats
 3. Try different file format (PDF → TXT)
-4. Contact system administrator
+4. Restart the server (most common fix)
+5. Contact system administrator
 
 ## Tips for Best Results
 
