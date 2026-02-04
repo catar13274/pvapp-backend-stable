@@ -22,10 +22,12 @@ class StockMovementCreate(BaseModel):
 class StockMovementResponse(BaseModel):
     id: int
     material_id: int
+    material_name: Optional[str] = None  # Added for display
     movement_type: str
     quantity: float
     price_net: Optional[float]
     project_id: Optional[int]
+    project_name: Optional[str] = None  # Added for display
     invoice_number: Optional[str]
     notes: Optional[str]
     created_by: Optional[int]
@@ -106,7 +108,26 @@ def get_stock_movements(
     movements = session.exec(
         query.order_by(StockMovement.created_at.desc()).offset(skip).limit(limit)
     ).all()
-    return movements
+    
+    # Enrich movements with material and project names
+    result = []
+    for movement in movements:
+        movement_dict = movement.dict()
+        
+        # Add material name
+        material = session.get(Material, movement.material_id)
+        if material:
+            movement_dict['material_name'] = material.name
+        
+        # Add project name if project_id exists
+        if movement.project_id:
+            project = session.get(Project, movement.project_id)
+            if project:
+                movement_dict['project_name'] = project.name
+        
+        result.append(StockMovementResponse(**movement_dict))
+    
+    return result
 
 @router.get("/movements/{movement_id}", response_model=StockMovementResponse)
 def get_stock_movement(
@@ -118,4 +139,19 @@ def get_stock_movement(
     movement = session.get(StockMovement, movement_id)
     if not movement:
         raise HTTPException(status_code=404, detail="Stock movement not found")
-    return movement
+    
+    # Enrich with material and project names
+    movement_dict = movement.dict()
+    
+    # Add material name
+    material = session.get(Material, movement.material_id)
+    if material:
+        movement_dict['material_name'] = material.name
+    
+    # Add project name if project_id exists
+    if movement.project_id:
+        project = session.get(Project, movement.project_id)
+        if project:
+            movement_dict['project_name'] = project.name
+    
+    return StockMovementResponse(**movement_dict)

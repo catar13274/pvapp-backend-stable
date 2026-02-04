@@ -467,20 +467,20 @@ async function loadStock() {
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Material ID</th>
+                        <th>Material</th>
                         <th>Type</th>
                         <th>Quantity</th>
-                        <th>Project ID</th>
+                        <th>Project</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${movements.map(m => `
                         <tr>
                             <td>${new Date(m.created_at).toLocaleDateString()}</td>
-                            <td>${m.material_id}</td>
+                            <td>${m.material_name || 'Material #' + m.material_id}</td>
                             <td><span style="color: ${m.movement_type === 'IN' ? 'green' : 'red'}">${m.movement_type}</span></td>
                             <td>${m.quantity}</td>
-                            <td>${m.project_id || '-'}</td>
+                            <td>${m.project_name || (m.project_id ? 'Project #' + m.project_id : '-')}</td>
                         </tr>
                     `).join('')}
                 </tbody>
