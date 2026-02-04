@@ -93,62 +93,189 @@ def parse_xml(file_path: str) -> Dict:
             "raw_text": etree.tostring(root, pretty_print=True).decode('utf-8')
         }
         
-        # Generic XML parsing - adapt based on your specific XML format
-        # This is a basic implementation
-        for elem in root.iter():
-            text = (elem.text or "").strip()
-            if not text:
-                continue
-                
-            # Try to identify fields
-            if 'supplier' in elem.tag.lower() or 'furnizor' in elem.tag.lower():
-                result["supplier"] = text
-            elif 'invoice' in elem.tag.lower() and 'number' in elem.tag.lower():
-                result["invoice_number"] = text
-            elif 'date' in elem.tag.lower() or 'data' in elem.tag.lower():
-                result["invoice_date"] = text
-            elif 'total' in elem.tag.lower():
-                try:
-                    result["total_amount"] = float(text.replace(',', '.'))
-                except:
-                    pass
+        # Define namespaces for e-factura (UBL format) to prevent "invalid predicate" errors
+        namespaces = {
+            'cac': 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
+            'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
+            'ubl': 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
+        }
         
-        # Try to extract items (this is very generic)
-        # You may need to customize based on your XML schema
+        def find_with_fallback(root_elem, xpath_with_ns, xpath_without_ns=None):
+            """Try to find element with namespaces, fallback to without. Prevents 'invalid predicate' errors."""
+            try:
+                elem = root_elem.find(xpath_with_ns, namespaces)
+                if elem is not None:
+                    return elem
+            except Exception:
+                pass  # XPath failed, try fallback
+            # Fallback: try without namespaces
+            if xpath_without_ns:
+                try:
+                    return root_elem.find(xpath_without_ns)
+                except Exception:
+                    pass
+            return None
+        
+        # Try UBL e-factura format first
+        supplier_elem = find_with_fallback(
+            root,
+            './/cac:AccountingSupplierParty/cac:Party/cac:PartyName/cbc:Name',
+            './/Party/PartyName/Name'
+        )
+        if supplier_elem is not None:
+            result["supplier"] = supplier_elem.text
+        
+        invoice_number_elem = find_with_fallback(
+            root,
+            './/cbc:ID',
+            './/ID'
+        )
+        if invoice_number_elem is not None:
+            result["invoice_number"] = invoice_number_elem.text
+        
+        date_elem = find_with_fallback(
+            root,
+            './/cbc:IssueDate',
+            './/IssueDate'
+        )
+        if date_elem is not None:
+            result["invoice_date"] = date_elem.text
+        
+        total_elem = find_with_fallback(
+            root,
+            './/cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount',
+            './/TaxInclusiveAmount'
+        )
+        if total_elem is None:
+            total_elem = find_with_fallback(
+                root,
+                './/cac:LegalMonetaryTotal/cbc:PayableAmount',
+                './/PayableAmount'
+            )
+        if total_elem is not None and total_elem.text:
+            try:
+                result["total_amount"] = float(total_elem.text.replace(',', '.'))
+            except:
+                pass
+        
+        # Generic fallback XML parsing - adapt based on your specific XML format
+        # This runs if UBL extraction didn't find everything
+        if not result["supplier"] or not result["invoice_number"]:
+            for elem in root.iter():
+                text = (elem.text or "").strip()
+                if not text:
+                    continue
+                    
+                # Try to identify fields
+                if not result["supplier"] and ('supplier' in elem.tag.lower() or 'furnizor' in elem.tag.lower() or 'party' in elem.tag.lower() and 'name' in elem.tag.lower()):
+                    result["supplier"] = text
+                elif not result["invoice_number"] and ('invoice' in elem.tag.lower() or 'factura' in elem.tag.lower()) and ('number' in elem.tag.lower() or 'id' in elem.tag.lower() or 'nr' in elem.tag.lower()):
+                    result["invoice_number"] = text
+                elif not result["invoice_date"] and ('date' in elem.tag.lower() or 'data' in elem.tag.lower() or 'issue' in elem.tag.lower()):
+                    result["invoice_date"] = text
+                elif not result["total_amount"] and 'total' in elem.tag.lower():
+                    try:
+                        result["total_amount"] = float(text.replace(',', '.'))
+                    except:
+                        pass
+        
+        # Try to extract items from UBL format first
         items = []
-        for item_elem in root.findall(".//*[contains(local-name(), 'item') or contains(local-name(), 'line')]"):
-            item = {
-                "description": None,
-                "quantity": 0.0,
-                "unit": None,
-                "unit_price": None,
-                "total_price": None
-            }
+        try:
+            invoice_lines = root.findall('.//cac:InvoiceLine', namespaces)
+            if not invoice_lines:
+                invoice_lines = root.findall('.//InvoiceLine')
             
-            for child in item_elem:
-                text = (child.text or "").strip()
-                if 'desc' in child.tag.lower():
-                    item["description"] = text
-                elif 'quant' in child.tag.lower() or 'qty' in child.tag.lower():
+            for line in invoice_lines:
+                item = {
+                    "description": None,
+                    "quantity": 0.0,
+                    "unit": None,
+                    "unit_price": None,
+                    "total_price": None
+                }
+                
+                # Extract description
+                desc_elem = find_with_fallback(line, './/cac:Item/cbc:Description', './/Item/Description')
+                if desc_elem is None:
+                    desc_elem = find_with_fallback(line, './/cac:Item/cbc:Name', './/Item/Name')
+                if desc_elem is not None:
+                    item["description"] = desc_elem.text
+                
+                # Extract quantity
+                qty_elem = find_with_fallback(line, './/cbc:InvoicedQuantity', './/InvoicedQuantity')
+                if qty_elem is not None:
                     try:
-                        item["quantity"] = float(text.replace(',', '.'))
+                        item["quantity"] = float(qty_elem.text.replace(',', '.'))
+                        # Get unit from attribute
+                        unit_code = qty_elem.get('unitCode') or qty_elem.get('unit')
+                        if unit_code:
+                            item["unit"] = unit_code
                     except:
                         pass
-                elif 'unit' in child.tag.lower() and 'price' not in child.tag.lower():
-                    item["unit"] = text
-                elif 'price' in child.tag.lower() and 'total' not in child.tag.lower():
+                
+                # Extract unit price
+                price_elem = find_with_fallback(line, './/cac:Price/cbc:PriceAmount', './/Price/PriceAmount')
+                if price_elem is not None:
                     try:
-                        item["unit_price"] = float(text.replace(',', '.'))
+                        item["unit_price"] = float(price_elem.text.replace(',', '.'))
                     except:
                         pass
-                elif 'total' in child.tag.lower():
+                
+                # Extract line total
+                total_elem = find_with_fallback(line, './/cbc:LineExtensionAmount', './/LineExtensionAmount')
+                if total_elem is not None:
                     try:
-                        item["total_price"] = float(text.replace(',', '.'))
+                        item["total_price"] = float(total_elem.text.replace(',', '.'))
                     except:
                         pass
-            
-            if item["description"]:
-                items.append(item)
+                
+                if item["description"]:
+                    items.append(item)
+        except Exception:
+            pass  # Fall through to generic extraction
+        
+        # Generic fallback for non-UBL XML
+        if not items:
+            for item_elem in root.findall(".//*[contains(local-name(), 'item') or contains(local-name(), 'line')]"):
+                item = {
+                    "description": None,
+                    "quantity": 0.0,
+                    "unit": None,
+                    "unit_price": None,
+                    "total_price": None
+                }
+                
+                for child in item_elem:
+                    text = (child.text or "").strip()
+                    if not text:
+                        continue
+                    if 'desc' in child.tag.lower() or 'name' in child.tag.lower():
+                        item["description"] = text
+                    elif 'quant' in child.tag.lower() or 'qty' in child.tag.lower():
+                        try:
+                            item["quantity"] = float(text.replace(',', '.'))
+                            # Check for unit in attributes
+                            unit_attr = child.get('unitCode') or child.get('unit')
+                            if unit_attr:
+                                item["unit"] = unit_attr
+                        except:
+                            pass
+                    elif 'unit' in child.tag.lower() and 'price' not in child.tag.lower():
+                        item["unit"] = text
+                    elif 'price' in child.tag.lower() and 'total' not in child.tag.lower():
+                        try:
+                            item["unit_price"] = float(text.replace(',', '.'))
+                        except:
+                            pass
+                    elif 'total' in child.tag.lower() or 'amount' in child.tag.lower():
+                        try:
+                            item["total_price"] = float(text.replace(',', '.'))
+                        except:
+                            pass
+                
+                if item["description"]:
+                    items.append(item)
         
         result["items"] = items
         return result
