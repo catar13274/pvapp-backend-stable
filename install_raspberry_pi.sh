@@ -54,18 +54,43 @@ apt install -y python3 python3-pip python3-venv git sqlite3 \
     python3-dev libffi-dev libssl-dev curl
 
 echo ""
-echo "Step 3: Creating installation directory..."
+echo "Step 3: Checking installation directory..."
+
+# Check if directory exists and handle accordingly
+if [ -d "$INSTALL_DIR/.git" ]; then
+    echo "Git repository already exists. Updating..."
+    cd "$INSTALL_DIR"
+    sudo -u $ACTUAL_USER git pull
+elif [ -d "$INSTALL_DIR" ] && [ "$(ls -A $INSTALL_DIR 2>/dev/null)" ]; then
+    # Directory exists and is not empty, but no git repo
+    echo ""
+    echo "WARNING: $INSTALL_DIR already exists and is not empty."
+    echo "This may be from a previous failed installation."
+    echo ""
+    echo "Options:"
+    echo "  1) Remove existing directory and do fresh install (recommended)"
+    echo "  2) Cancel installation"
+    echo ""
+    read -p "Enter your choice (1 or 2): " CHOICE
+    
+    if [ "$CHOICE" = "1" ]; then
+        echo "Removing existing directory..."
+        rm -rf "$INSTALL_DIR"
+        echo "Directory removed."
+    else
+        echo "Installation cancelled by user."
+        exit 1
+    fi
+fi
+
+# Create directories (will only create if they don't exist)
+echo "Creating installation directories..."
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$DATA_DIR"
 mkdir -p "$BACKUP_DIR"
 
-# Check if git repository exists
-if [ -d "$INSTALL_DIR/.git" ]; then
-    echo ""
-    echo "Repository already exists. Updating..."
-    cd "$INSTALL_DIR"
-    sudo -u $ACTUAL_USER git pull
-else
+# Clone repository if not already present
+if [ ! -d "$INSTALL_DIR/.git" ]; then
     echo ""
     echo "Step 4: Cloning repository..."
     read -p "Enter repository URL (or press Enter for default): " REPO_URL
@@ -75,6 +100,8 @@ else
     
     cd /opt
     sudo -u $ACTUAL_USER git clone "$REPO_URL" pvapp
+    cd "$INSTALL_DIR"
+else
     cd "$INSTALL_DIR"
 fi
 

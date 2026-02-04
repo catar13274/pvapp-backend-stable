@@ -74,7 +74,17 @@ If you encounter any issues:
 
 1. **404 Error**: Make sure you're using the correct branch URL (see Option 1 or 2 above)
 2. **Permission Denied**: Run the script with `sudo`
-3. **Other Issues**: See [TROUBLESHOOTING_RPI.md](TROUBLESHOOTING_RPI.md)
+3. **Directory Already Exists**: The script will detect if `/opt/pvapp` exists and offer to:
+   - Remove and reinstall (recommended for failed installations)
+   - Cancel and let you handle it manually
+4. **Other Issues**: See [TROUBLESHOOTING_RPI.md](TROUBLESHOOTING_RPI.md)
+
+### Re-running Installation
+
+If a previous installation failed, the script is now smart enough to detect existing directories:
+- If a git repository exists, it will update it
+- If the directory exists but isn't a git repository, it will prompt you to remove it
+- This prevents the "directory already exists" error
 
 ## Need Help?
 

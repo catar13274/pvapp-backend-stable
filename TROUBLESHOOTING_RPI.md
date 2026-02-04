@@ -148,6 +148,55 @@ rm -f /opt/pvapp/data/db.sqlite3-journal
 sudo systemctl start pvapp
 ```
 
+### 2.5. Installation Failures
+
+**Problem: "fatal: destination path 'pvapp' already exists and is not an empty directory"**
+
+This error occurs when re-running the installation script after a failed installation.
+
+**Solution (Automatic):**
+
+The installation script now automatically detects this and offers options:
+```bash
+# Just re-run the installation script
+sudo bash install_raspberry_pi.sh
+
+# It will detect the existing directory and prompt you to:
+# 1) Remove and reinstall (recommended)
+# 2) Cancel installation
+```
+
+**Solution (Manual):**
+
+If you need to manually clean up:
+```bash
+# Remove the entire installation
+sudo systemctl stop pvapp 2>/dev/null
+sudo rm -rf /opt/pvapp
+
+# Then re-run installation
+sudo bash install_raspberry_pi.sh
+```
+
+**If you want to keep your data:**
+```bash
+# Backup data first
+sudo cp -r /opt/pvapp/data /tmp/pvapp-backup
+
+# Remove installation but keep backup
+sudo systemctl stop pvapp 2>/dev/null
+sudo rm -rf /opt/pvapp
+
+# Re-run installation
+sudo bash install_raspberry_pi.sh
+
+# After installation completes, restore data
+sudo systemctl stop pvapp
+sudo cp -r /tmp/pvapp-backup/db.sqlite3 /opt/pvapp/data/
+sudo chown -R pi:pi /opt/pvapp/data
+sudo systemctl start pvapp
+```
+
 ### 3. Performance Issues
 
 **Check system resources:**
