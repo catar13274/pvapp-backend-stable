@@ -178,6 +178,28 @@ sudo rm -rf /opt/pvapp
 sudo bash install_raspberry_pi.sh
 ```
 
+**Problem: "can't open file '/opt/pvapp/scripts/init_db.py': [Errno 2] No such file or directory"**
+
+This error occurs if the wrong branch was cloned.
+
+**Cause:**
+The installation script clones from branch `copilot/add-user-registration-endpoint` which contains all the necessary files. If git clone failed or cloned the wrong branch, essential files may be missing.
+
+**Solution:**
+```bash
+# Remove incomplete installation
+sudo systemctl stop pvapp 2>/dev/null
+sudo rm -rf /opt/pvapp
+
+# Re-run installation (it will clone the correct branch)
+sudo bash install_raspberry_pi.sh
+```
+
+The script now automatically:
+- Clones the correct branch with all files
+- Ensures all required files (app/, scripts/, frontend/) are present
+- Verifies the installation before proceeding
+
 **If you want to keep your data:**
 ```bash
 # Backup data first

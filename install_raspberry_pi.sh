@@ -13,6 +13,9 @@ echo "PV Management App - Raspberry Pi"
 echo "Automated Installation Script"
 echo "=================================="
 echo ""
+echo "Note: Installing from branch: copilot/add-user-registration-endpoint"
+echo "      (This will change to 'main' after the PR is merged)"
+echo ""
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -28,6 +31,7 @@ ACTUAL_HOME=$(eval echo ~$ACTUAL_USER)
 INSTALL_DIR="/opt/pvapp"
 DATA_DIR="$INSTALL_DIR/data"
 BACKUP_DIR="$INSTALL_DIR/backups"
+REPO_BRANCH="copilot/add-user-registration-endpoint"  # Branch to clone (change to 'main' after merge)
 SERVICE_NAME="pvapp"
 
 echo "Configuration:"
@@ -60,7 +64,10 @@ echo "Step 3: Checking installation directory..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     echo "Git repository already exists. Updating..."
     cd "$INSTALL_DIR"
-    sudo -u $ACTUAL_USER git pull
+    echo "Checking out branch: $REPO_BRANCH"
+    sudo -u $ACTUAL_USER git fetch origin
+    sudo -u $ACTUAL_USER git checkout "$REPO_BRANCH"
+    sudo -u $ACTUAL_USER git pull origin "$REPO_BRANCH"
     REPO_EXISTS=true
 elif [ -d "$INSTALL_DIR" ] && [ "$(ls -A $INSTALL_DIR 2>/dev/null)" ]; then
     # Directory exists and is not empty, but no git repo
@@ -98,7 +105,8 @@ if [ "$REPO_EXISTS" != "true" ]; then
     
     # Clone into /opt - git will create the pvapp directory
     cd /opt
-    sudo -u $ACTUAL_USER git clone "$REPO_URL" pvapp
+    echo "Cloning branch: $REPO_BRANCH"
+    sudo -u $ACTUAL_USER git clone -b "$REPO_BRANCH" "$REPO_URL" pvapp
     cd "$INSTALL_DIR"
 fi
 
