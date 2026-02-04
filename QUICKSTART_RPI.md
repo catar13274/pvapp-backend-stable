@@ -1,10 +1,21 @@
 # PV Management App - Raspberry Pi Quick Reference
 
-## 🚀 One-Line Installation
+## 🚀 Installation Methods
 
+### Method 1: Direct Download
 ```bash
-curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/main/install_raspberry_pi.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/copilot/add-user-registration-endpoint/install_raspberry_pi.sh -o install.sh
+sudo bash install.sh
 ```
+
+### Method 2: Clone Repository
+```bash
+git clone -b copilot/add-user-registration-endpoint https://github.com/catar13274/pvapp-backend-stable.git /tmp/pvapp-install
+cd /tmp/pvapp-install
+sudo bash install_raspberry_pi.sh
+```
+
+> **Note**: Using feature branch until merged to main. URLs will update after merge.
 
 ## 📱 Access After Installation
 

@@ -9,8 +9,19 @@ Perfect for on-site installation management, local network deployment, or learni
 ### One-Line Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/main/install_raspberry_pi.sh | sudo bash
+# Download and run installation script
+curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/copilot/add-user-registration-endpoint/install_raspberry_pi.sh -o install.sh
+sudo bash install.sh
 ```
+
+**Alternative: Clone and Install**
+```bash
+git clone -b copilot/add-user-registration-endpoint https://github.com/catar13274/pvapp-backend-stable.git /tmp/pvapp-install
+cd /tmp/pvapp-install
+sudo bash install_raspberry_pi.sh
+```
+
+> **Note**: Using feature branch `copilot/add-user-registration-endpoint` until merged to main.
 
 That's it! The script will:
 - ✅ Install all dependencies

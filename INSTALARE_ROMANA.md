@@ -22,12 +22,21 @@ sudo apt upgrade -y
 ### Pasul 2: Descarcă și Rulează Scriptul de Instalare
 
 ```bash
-# Descarcă scriptul
-curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/main/install_raspberry_pi.sh -o install.sh
+# Metoda 1: Descarcă scriptul
+curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/copilot/add-user-registration-endpoint/install_raspberry_pi.sh -o install.sh
 
 # Rulează instalarea (durează 5-10 minute)
 sudo bash install.sh
 ```
+
+**Metoda Alternativă: Clonează repository-ul**
+```bash
+git clone -b copilot/add-user-registration-endpoint https://github.com/catar13274/pvapp-backend-stable.git /tmp/pvapp-install
+cd /tmp/pvapp-install
+sudo bash install_raspberry_pi.sh
+```
+
+> **Notă**: Se folosește branch-ul `copilot/add-user-registration-endpoint` până la merge în main.
 
 Scriptul va:
 - Instala toate dependențele necesare

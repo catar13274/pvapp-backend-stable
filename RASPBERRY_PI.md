@@ -30,14 +30,20 @@ This guide will help you deploy the PV Management App on a Raspberry Pi, perfect
 For fastest deployment, use the automated installation script:
 
 ```bash
-# 1. Download and run the installation script
-curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/main/install_raspberry_pi.sh -o install.sh
+# Method 1: Download and run (recommended)
+curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/copilot/add-user-registration-endpoint/install_raspberry_pi.sh -o install.sh
 chmod +x install.sh
 sudo ./install.sh
 
-# 2. The script will install everything and start the service
-# Access the app at: http://raspberry-pi-ip:8000
+# Method 2: Clone repository and run
+git clone -b copilot/add-user-registration-endpoint https://github.com/catar13274/pvapp-backend-stable.git /tmp/pvapp-install
+cd /tmp/pvapp-install
+sudo bash install_raspberry_pi.sh
+
+# After installation: Access at http://raspberry-pi-ip:8000
 ```
+
+> **Note**: Currently using feature branch. After merge to main, URLs will update to use `main` branch.
 
 Default credentials:
 - Username: `admin`

@@ -8,8 +8,14 @@ This application runs perfectly on Raspberry Pi, making it ideal for on-site ins
 
 **Quick Raspberry Pi Installation:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/main/install_raspberry_pi.sh -o install.sh
+# Method 1: Direct download (recommended after merge to main)
+curl -fsSL https://raw.githubusercontent.com/catar13274/pvapp-backend-stable/copilot/add-user-registration-endpoint/install_raspberry_pi.sh -o install.sh
 sudo bash install.sh
+
+# Method 2: Clone repository
+git clone -b copilot/add-user-registration-endpoint https://github.com/catar13274/pvapp-backend-stable.git
+cd pvapp-backend-stable
+sudo bash install_raspberry_pi.sh
 ```
 
 📖 **Detailed guides:**
