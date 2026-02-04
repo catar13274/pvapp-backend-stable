@@ -756,7 +756,25 @@ async function createExtraCost(e) {
 async function loadSettings() {
     try {
         const settings = await apiCall('/api/settings/');
+        
+        // Find VAT rate setting
+        const vatSetting = settings.find(s => s.key === 'vat_rate');
+        const vatRate = vatSetting ? vatSetting.value : '19';
+        
         const html = `
+            <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 4px;">
+                <h3>Quick Settings</h3>
+                <div class="form-group" style="max-width: 300px;">
+                    <label>VAT Rate (%):</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="vatRateInput" value="${vatRate}" min="0" max="100" step="0.01" style="flex: 1;">
+                        <button class="btn btn-primary" onclick="updateVATRate()">Save</button>
+                    </div>
+                    <small style="color: #666;">Current VAT rate percentage</small>
+                </div>
+            </div>
+            
+            <h3>All Settings</h3>
             <table>
                 <thead>
                     <tr>
@@ -783,6 +801,32 @@ async function loadSettings() {
         document.getElementById('settingsList').innerHTML = html;
     } catch (error) {
         console.error('Error loading settings:', error);
+    }
+}
+
+async function updateVATRate() {
+    const vatRateInput = document.getElementById('vatRateInput');
+    const newRate = vatRateInput.value;
+    
+    // Validate
+    if (!newRate || isNaN(newRate) || newRate < 0 || newRate > 100) {
+        alert('Please enter a valid VAT rate between 0 and 100');
+        return;
+    }
+    
+    try {
+        await apiCall('/api/settings/', {
+            method: 'POST',
+            body: JSON.stringify({
+                key: 'vat_rate',
+                value: newRate,
+                description: 'VAT rate percentage'
+            })
+        });
+        alert('VAT rate updated successfully!');
+        loadSettings();
+    } catch (error) {
+        alert('Error updating VAT rate: ' + error.message);
     }
 }
 
