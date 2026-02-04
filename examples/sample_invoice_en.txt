@@ -1,0 +1,52 @@
+INVOICE
+
+Supplier: GREEN POWER SYSTEMS LTD
+Address: 123 Solar Street, Bucharest
+VAT: RO98765432
+
+Invoice Number: INV-2024-042
+Date: January 20, 2024
+Customer: PV INSTALLATION CO
+
+================================
+LINE ITEMS
+================================
+
+#   Description                  Qty   Unit   Unit Price   Total
+--  ---------------------------  ----  -----  -----------  --------
+1   Solar Panel 400W             15    pcs    520.00       7,800.00
+    Monocrystalline
+    
+2   Hybrid Inverter 8kW          2     pcs    2,500.00     5,000.00
+    with Battery Support
+    
+3   Solar Cable 4mm²             100   m      6.50         650.00
+    Double Insulated
+    
+4   DC Isolator Switch           2     pcs    45.00        90.00
+    
+5   AC Distribution Box          1     pcs    450.00       450.00
+    with Surge Protection
+    
+6   Mounting Rails               30    pcs    25.00        750.00
+    Aluminum 4m
+    
+7   End Clamps                   60    pcs    2.50         150.00
+    
+8   Mid Clamps                   45    pcs    3.00         135.00
+    
+================================
+
+Subtotal:                                      15,025.00 EUR
+VAT 19%:                                        2,854.75 EUR
+TOTAL:                                         17,879.75 EUR
+
+================================
+
+Payment Terms: Net 30
+Due Date: February 19, 2024
+
+Thank you for your business!
+
+GREEN POWER SYSTEMS LTD
+Authorized Signature

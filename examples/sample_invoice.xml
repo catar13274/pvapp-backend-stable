@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice>
+    <Header>
+        <InvoiceNumber>XML-2024-015</InvoiceNumber>
+        <InvoiceDate>2024-01-25</InvoiceDate>
+        <DueDate>2024-02-24</DueDate>
+    </Header>
+    
+    <Supplier>
+        <Name>RENEWABLE TECH SRL</Name>
+        <Address>Bd. Independentei 45, Cluj-Napoca</Address>
+        <VATNumber>RO34567890</VATNumber>
+        <Country>Romania</Country>
+    </Supplier>
+    
+    <Customer>
+        <Name>PV SOLUTIONS SRL</Name>
+        <Address>Str. Soarelui 12, Cluj-Napoca</Address>
+        <VATNumber>RO23456789</VATNumber>
+    </Customer>
+    
+    <LineItems>
+        <Item>
+            <LineNumber>1</LineNumber>
+            <Description>Panou fotovoltaic bifacial 450W</Description>
+            <Quantity>25</Quantity>
+            <Unit>buc</Unit>
+            <UnitPrice>580.00</UnitPrice>
+            <TotalPrice>14500.00</TotalPrice>
+            <VATRate>19</VATRate>
+        </Item>
+        
+        <Item>
+            <LineNumber>2</LineNumber>
+            <Description>Inverter string 10kW trifazat</Description>
+            <Quantity>2</Quantity>
+            <Unit>buc</Unit>
+            <UnitPrice>3200.00</UnitPrice>
+            <TotalPrice>6400.00</TotalPrice>
+            <VATRate>19</VATRate>
+        </Item>
+        
+        <Item>
+            <LineNumber>3</LineNumber>
+            <Description>Optimizator putere individual</Description>
+            <Quantity>25</Quantity>
+            <Unit>buc</Unit>
+            <UnitPrice>85.00</UnitPrice>
+            <TotalPrice>2125.00</TotalPrice>
+            <VATRate>19</VATRate>
+        </Item>
+        
+        <Item>
+            <LineNumber>4</LineNumber>
+            <Description>Cablu solar 6mm2 negru/rosu</Description>
+            <Quantity>150</Quantity>
+            <Unit>m</Unit>
+            <UnitPrice>9.50</UnitPrice>
+            <TotalPrice>1425.00</TotalPrice>
+            <VATRate>19</VATRate>
+        </Item>
+        
+        <Item>
+            <LineNumber>5</LineNumber>
+            <Description>Structura montaj acoperis inclinat</Description>
+            <Quantity>25</Quantity>
+            <Unit>set</Unit>
+            <UnitPrice>95.00</UnitPrice>
+            <TotalPrice>2375.00</TotalPrice>
+            <VATRate>19</VATRate>
+        </Item>
+        
+        <Item>
+            <LineNumber>6</LineNumber>
+            <Description>Tablou monofazat complet echipat</Description>
+            <Quantity>1</Quantity>
+            <Unit>buc</Unit>
+            <UnitPrice>1250.00</UnitPrice>
+            <TotalPrice>1250.00</TotalPrice>
+            <VATRate>19</VATRate>
+        </Item>
+    </LineItems>
+    
+    <Summary>
+        <Subtotal>28075.00</Subtotal>
+        <VATAmount>5334.25</VATAmount>
+        <Total>33409.25</Total>
+        <Currency>RON</Currency>
+    </Summary>
+    
+    <PaymentTerms>
+        <Method>BankTransfer</Method>
+        <DueDays>30</DueDays>
+    </PaymentTerms>
+</Invoice>

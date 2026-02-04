@@ -1,0 +1,46 @@
+FACTURA / INVOICE
+
+Furnizor / Supplier: SOLAR ENERGY SRL
+Adresa: Str. Energiei Nr. 10, Bucuresti
+CUI: RO12345678
+
+Factura Nr. / Invoice No: FAC-2024-001
+Data: 15.01.2024
+Client: PV INSTALL COMPANY
+
+================================
+ARTICOLE / ITEMS
+================================
+
+Nr  Descriere                    Cant    UM    Pret Unit    Valoare
+--  ---------------------------  ------  ----  ----------  ----------
+1   Panou solar fotovoltaic       20     buc    450.00     9,000.00
+    300W policristalin
+    
+2   Inverter solar on-grid         4     buc   1,200.00    4,800.00
+    5kW trifazat
+    
+3   Cablu solar 6mm² UV            50     m       8.50       425.00
+    rezistent
+    
+4   Conector MC4 pereche           40     set     3.50       140.00
+    
+5   Structura montaj tabla         20     buc     75.00     1,500.00
+    inclinata
+    
+6   Tablou protectie si            1      buc    850.00      850.00
+    monitorizare
+    
+================================
+
+Subtotal:                                              16,715.00 RON
+TVA 19%:                                                3,175.85 RON
+TOTAL FACTURA:                                         19,890.85 RON
+
+================================
+
+Conditii plata: 30 zile
+Scadenta: 14.02.2024
+
+Semnatura si stampila
+[SOLAR ENERGY SRL]

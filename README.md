@@ -32,6 +32,7 @@ sudo bash install_raspberry_pi.sh
 - **Stock Management**: Track IN/OUT stock movements with automatic inventory updates
 - **Cost Tracking**: Record labor and extra costs for projects
 - **Balance Reports**: View detailed project cost breakdowns with VAT calculations
+- **Invoice Upload**: 📤 Upload invoices (PDF, DOC, TXT, XML) with automatic material extraction
 - **Company Settings**: Configure VAT rates and other company settings
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 
@@ -44,7 +45,13 @@ sudo bash install_raspberry_pi.sh
 - **Cost Tracking**: Labor and extra costs per project
 - **Balance & Reports**: Complete project balance calculations with PDF export
 - **Company Settings**: Configurable settings (VAT rate, etc.)
-- **Invoice Management**: Invoice processing and material mapping
+- **Invoice Processing**: 
+  - 📄 Multi-format file upload (PDF, DOC, DOCX, TXT, XML)
+  - 🤖 Automatic text extraction and parsing
+  - 🎯 Intelligent material matching with confidence scores
+  - ✅ User validation workflow
+  - 🆕 Auto-creation of new materials
+  - 📦 Automatic stock IN movements
 
 ## Setup
 
