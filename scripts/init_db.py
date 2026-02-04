@@ -14,9 +14,22 @@ from app.database import engine, init_db
 from app.models import User, CompanySetting
 from app.auth import get_password_hash
 
+def run_migrations():
+    """Run database migrations"""
+    try:
+        from migrate_db import run_migrations as do_migrate
+        print("Running database migrations...")
+        do_migrate()
+    except Exception as e:
+        print(f"Warning: Migration failed: {e}")
+        print("This might be OK if running for the first time")
+
 def create_admin_user():
     """Create a default admin user if one doesn't exist"""
     init_db()
+    
+    # Run migrations after creating tables
+    run_migrations()
     
     with Session(engine) as session:
         # Check if admin user already exists
