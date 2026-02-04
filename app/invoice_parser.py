@@ -66,8 +66,22 @@ def parse_xml(file_path: str) -> Dict:
     try:
         from lxml import etree
         
-        tree = etree.parse(file_path)
-        root = tree.getroot()
+        # First, check if file exists and is not empty
+        path_obj = Path(file_path)
+        if not path_obj.exists():
+            return {"error": "XML file not found"}
+        
+        file_size = path_obj.stat().st_size
+        if file_size == 0:
+            return {"error": "XML file is empty"}
+        
+        # Read and strip BOM if present
+        file_content = path_obj.read_text(encoding='utf-8-sig')
+        if not file_content.strip():
+            return {"error": "XML file contains no data"}
+        
+        # Parse XML from string (handles BOM better than parse from file)
+        root = etree.fromstring(file_content.encode('utf-8'))
         
         # Try to extract common fields
         result = {
@@ -141,7 +155,13 @@ def parse_xml(file_path: str) -> Dict:
         
     except Exception as e:
         logger.error(f"Error parsing XML: {e}")
-        return {"error": str(e), "raw_text": ""}
+        error_msg = str(e)
+        # Provide more helpful error messages
+        if "empty" in error_msg.lower():
+            error_msg = "XML file is empty or contains no valid data"
+        elif "line 1, column 1" in error_msg:
+            error_msg = "XML file appears to be empty or has invalid encoding. Please ensure the file is a valid XML document."
+        return {"error": error_msg, "raw_text": ""}
 
 
 def extract_invoice_data(text: str, file_type: str) -> Dict:
