@@ -1,125 +1,70 @@
-from fastapi import APIRouter, Depends, HTTPException
-from typing import List, Optional
+"""
+Purchases Management API
+"""
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
-from app import models
+from typing import List
+
+from app.models import Purchase, PurchaseItem
 from app.database import get_session
-from pydantic import BaseModel
 
-router = APIRouter(prefix="/api/v1/purchases", tags=["purchases"])
+router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
-class PurchaseItemCreate(BaseModel):
-    material_id: Optional[int] = None
-    sku_raw: Optional[str] = None
-    sku_clean: Optional[str] = None
-    description: Optional[str] = None
-    quantity: float
-    unit_price: float
-
-class PurchaseCreate(BaseModel):
-    supplier: Optional[str] = None
-    invoice_number: Optional[str] = None
-    invoice_date: Optional[str] = None
-    total_amount: Optional[float] = None
-    items: List[PurchaseItemCreate]
-
-class PurchaseItemRead(BaseModel):
-    id: int
-    purchase_id: int
-    material_id: Optional[int]
-    sku_raw: Optional[str]
-    sku_clean: Optional[str]
-    description: Optional[str]
-    quantity: float
-    unit_price: Optional[float]
-    total_price: Optional[float]
-    class Config:
-        orm_mode = True
-
-class PurchaseRead(BaseModel):
-    id: int
-    supplier: Optional[str]
-    invoice_number: Optional[str]
-    invoice_date: Optional[str]
-    total_amount: Optional[float]
-    created_at: str
-    class Config:
-        orm_mode = True
-
-@router.get("/", response_model=List[PurchaseRead], operation_id="list_purchases")
-def list_purchases(session: Session = Depends(get_session)):
-    purchases = session.exec(select(models.Purchase).order_by(models.Purchase.id.desc())).all()
+@router.get("/", response_model=List[Purchase])
+async def list_purchases(
+    company_id: int,
+    session: Session = Depends(get_session),
+    skip: int = 0,
+    limit: int = 100
+):
+    """List all purchases for a company"""
+    statement = select(Purchase).where(
+        Purchase.company_id == company_id
+    ).offset(skip).limit(limit)
+    purchases = session.exec(statement).all()
     return purchases
 
-@router.post("/", status_code=201, operation_id="create_purchase")
-def create_purchase(payload: PurchaseCreate, session: Session = Depends(get_session)):
-    if not payload.items:
-        raise HTTPException(status_code=400, detail="items required")
+@router.get("/{purchase_id}", response_model=Purchase)
+async def get_purchase(purchase_id: int, session: Session = Depends(get_session)):
+    """Get purchase by ID"""
+    purchase = session.get(Purchase, purchase_id)
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    return purchase
 
-    items_total = sum(i.quantity * i.unit_price for i in payload.items)
-    purchase_total = payload.total_amount or items_total
-
-    purchase = models.Purchase(
-        supplier=payload.supplier,
-        invoice_number=payload.invoice_number,
-        invoice_date=payload.invoice_date,
-        total_amount=purchase_total
-    )
+@router.post("/", response_model=Purchase)
+async def create_purchase(purchase: Purchase, session: Session = Depends(get_session)):
+    """Create new purchase"""
     session.add(purchase)
     session.commit()
     session.refresh(purchase)
+    return purchase
 
-    for it in payload.items:
-        pi = models.PurchaseItem(
-            purchase_id=purchase.id,
-            material_id=it.material_id,
-            sku_raw=it.sku_raw,
-            sku_clean=it.sku_clean,
-            description=it.description,
-            quantity=it.quantity,
-            unit_price=it.unit_price,
-            total_price=(it.quantity * it.unit_price)
-        )
-        session.add(pi)
-        session.commit()
-        session.refresh(pi)
+@router.get("/{purchase_id}/items")
+async def get_purchase_items(
+    purchase_id: int,
+    session: Session = Depends(get_session)
+):
+    """Get all items for a purchase"""
+    statement = select(PurchaseItem).where(
+        PurchaseItem.purchase_id == purchase_id
+    )
+    items = session.exec(statement).all()
+    return items
 
-        if it.material_id is not None:
-            sm = models.StockMovement(
-                material_id=it.material_id,
-                change=it.quantity,
-                movement_type="purchase_in",
-                reference_type="purchase",
-                reference_id=purchase.id,
-                quantity=it.quantity
-            )
-            session.add(sm)
-            session.commit()
-
-    return {"id": purchase.id, "created_at": str(purchase.created_at)}
-
-@router.get("/{purchase_id}", operation_id="get_purchase_detail")
-def get_purchase_detail(purchase_id: int, session: Session = Depends(get_session)):
-    purchase = session.get(models.Purchase, purchase_id)
+@router.post("/{purchase_id}/items")
+async def add_purchase_item(
+    purchase_id: int,
+    item: PurchaseItem,
+    session: Session = Depends(get_session)
+):
+    """Add item to purchase"""
+    purchase = session.get(Purchase, purchase_id)
     if not purchase:
-        raise HTTPException(status_code=404, detail="Not Found")
-
-    items = session.exec(select(models.PurchaseItem).where(models.PurchaseItem.purchase_id == purchase_id)).all()
-    result_items = []
-    for it in items:
-        mat = None
-        if it.material_id:
-            mat = session.get(models.Material, it.material_id)
-        result_items.append({
-            "id": it.id,
-            "purchase_id": it.purchase_id,
-            "material_id": it.material_id,
-            "sku_raw": it.sku_raw,
-            "sku_clean": it.sku_clean,
-            "description": it.description,
-            "quantity": it.quantity,
-            "unit_price": it.unit_price,
-            "total_price": it.total_price,
-            "material": {"id": mat.id, "sku": mat.sku, "name": mat.name} if mat else None
-        })
-
-    return {"purchase": purchase, "items": result_items}
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    
+    item.purchase_id = purchase_id
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return item
