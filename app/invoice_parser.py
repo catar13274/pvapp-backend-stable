@@ -363,16 +363,24 @@ def extract_invoice_data(text: str, file_type: str) -> Dict:
 def extract_line_items(text: str) -> List[Dict]:
     """
     Extract line items from invoice text
-    This is a heuristic approach and may need customization
+    Enhanced to handle ROMSTAL format with SKU codes
     """
     items = []
     
     # Look for table-like structures
     lines = text.split('\n')
     
-    # Try to find lines with quantity and price patterns
-    item_pattern = re.compile(
-        r'(.+?)\s+(\d+[.,]?\d*)\s+(?:buc|pcs|pc|unit|kg|m|l|set)?\s*(\d+[.,]\d+)\s+(\d+[.,]\d+)',
+    # Enhanced pattern for ROMSTAL format: 
+    # Line number + SKU + Description + Unit + Quantity + Unit Price + Total
+    # Example: "1 35FV1598 +Invertor monofazat... buc 1,000 3.179,84 3.179,84"
+    romstal_pattern = re.compile(
+        r'^\d+\s+([A-Z0-9]+)\s+(.+?)\s+(buc|kg|m|l|h|set|pcs|bucăți)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)',
+        re.IGNORECASE
+    )
+    
+    # Standard pattern with optional unit
+    standard_pattern = re.compile(
+        r'(.+?)\s+([\d.,]+)\s+(?:buc|bucăți|kg|m|l|h|set|pcs)?\s*([\d.,]+)\s+([\d.,]+)',
         re.IGNORECASE
     )
     
@@ -380,40 +388,114 @@ def extract_line_items(text: str) -> List[Dict]:
         line = line.strip()
         if not line or len(line) < 10:
             continue
-            
-        match = item_pattern.search(line)
+        
+        # Try ROMSTAL format first
+        match = romstal_pattern.search(line)
+        if match:
+            try:
+                sku = match.group(1).strip()
+                description = match.group(2).strip()
+                unit = match.group(3).strip()
+                quantity_str = match.group(4).replace('.', '').replace(',', '.')
+                unit_price_str = match.group(5).replace('.', '').replace(',', '.')
+                total_str = match.group(6).replace('.', '').replace(',', '.')
+                
+                # Clean description
+                description = re.sub(r'\s+', ' ', description)  # Remove extra spaces
+                description = re.sub(r'[+\-@]', '', description)  # Remove special chars
+                description = description.strip()
+                
+                # Add SKU to description if both exist
+                if sku and description:
+                    full_description = f"{sku} - {description}"
+                elif sku:
+                    full_description = sku
+                else:
+                    full_description = description
+                
+                quantity = float(quantity_str)
+                unit_price = float(unit_price_str)
+                total_price = float(total_str)
+                
+                items.append({
+                    "description": full_description,
+                    "quantity": quantity,
+                    "unit": unit,
+                    "unit_price": unit_price,
+                    "total_price": total_price
+                })
+                continue
+            except Exception as e:
+                # Log error but continue to next line
+                logger.debug(f"Failed to parse ROMSTAL line: {e}")
+        
+        # Try standard pattern
+        match = standard_pattern.search(line)
         if match:
             try:
                 description = match.group(1).strip()
-                quantity = float(match.group(2).replace(',', '.'))
-                unit_price = float(match.group(3).replace(',', '.'))
-                total_price = float(match.group(4).replace(',', '.'))
+                quantity_str = match.group(2).replace('.', '').replace(',', '.')
+                unit_price_str = match.group(3).replace('.', '').replace(',', '.')
+                total_str = match.group(4).replace('.', '').replace(',', '.')
+                
+                # Clean description - remove currency symbols and extra spaces
+                description = re.sub(r'\bRON\b', '', description, flags=re.IGNORECASE)
+                description = re.sub(r'\s+', ' ', description)
+                description = description.strip()
+                
+                # Skip if description is just "buc" or other unit
+                if description.lower() in ['buc', 'kg', 'm', 'l', 'h', 'set', 'pcs', 'bucăți']:
+                    continue
+                
+                quantity = float(quantity_str)
+                unit_price = float(unit_price_str)
+                total_price = float(total_str)
+                
+                # Extract unit from description if present
+                unit = None
+                unit_match = re.search(r'\b(buc|bucăți|kg|m|l|h|set|pcs)\b', description, re.IGNORECASE)
+                if unit_match:
+                    unit = unit_match.group(1)
+                    # Remove unit from description
+                    description = description.replace(unit_match.group(0), '').strip()
                 
                 # Basic validation
-                if abs(quantity * unit_price - total_price) < 0.01 or total_price > 0:
+                if len(description) > 2 and (abs(quantity * unit_price - total_price) < 1.0 or total_price > 0):
                     items.append({
                         "description": description,
                         "quantity": quantity,
-                        "unit": None,
+                        "unit": unit,
                         "unit_price": unit_price,
                         "total_price": total_price
                     })
-            except:
+            except Exception as e:
+                logger.debug(f"Failed to parse standard line: {e}")
                 continue
     
     # If no items found, try simpler pattern (just description and numbers)
     if not items:
-        simple_pattern = re.compile(r'(.{10,})\s+(\d+[.,]?\d*)\s+(\d+[.,]\d+)', re.IGNORECASE)
+        simple_pattern = re.compile(r'(.{10,})\s+([\d.,]+)\s+([\d.,]+)', re.IGNORECASE)
         for line in lines:
             line = line.strip()
             match = simple_pattern.search(line)
             if match:
                 try:
+                    description = match.group(1).strip()
+                    # Clean description
+                    description = re.sub(r'\bRON\b', '', description, flags=re.IGNORECASE)
+                    description = re.sub(r'\s+', ' ', description).strip()
+                    
+                    if len(description) < 3:
+                        continue
+                    
+                    quantity_str = match.group(2).replace('.', '').replace(',', '.')
+                    unit_price_str = match.group(3).replace('.', '').replace(',', '.')
+                    
                     items.append({
-                        "description": match.group(1).strip(),
-                        "quantity": float(match.group(2).replace(',', '.')),
+                        "description": description,
+                        "quantity": float(quantity_str),
                         "unit": None,
-                        "unit_price": float(match.group(3).replace(',', '.')),
+                        "unit_price": float(unit_price_str),
                         "total_price": None
                     })
                 except:
