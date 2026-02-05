@@ -1,14 +1,18 @@
-from sqlmodel import create_engine, SQLModel, Session
+"""
+Database Configuration
+"""
+from sqlmodel import SQLModel, create_engine, Session
 import os
 
-DB_URL = os.environ.get("PVAPP_DB_URL", "sqlite:///./db.sqlite3")
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pvapp.db")
 
-def init_db():
-    # Import models here to ensure they are registered
-    from app import models  # noqa: F401
+engine = create_engine(DATABASE_URL, echo=True)
+
+def create_db_and_tables():
+    """Create database tables"""
     SQLModel.metadata.create_all(engine)
 
 def get_session():
+    """Get database session"""
     with Session(engine) as session:
         yield session
