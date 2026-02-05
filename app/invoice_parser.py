@@ -385,8 +385,14 @@ def extract_line_items(text: str) -> List[Dict]:
         r'^\s*Emis de'
     ]
     
-    # Enhanced pattern for ROMSTAL format: 
-    # Line number + SKU + Description + Unit + Quantity + Unit Price + Total
+    # Enhanced pattern for ROMSTAL format with pipe delimiters
+    # Format: "1 | 35FV1598 Description | buc | 1,000 | 3.179,84 | 3.179,84 | 667,77"
+    romstal_pipe_pattern = re.compile(
+        r'^\d+\s*\|\s*([A-Z0-9]+)\s+(.+?)\s*\|\s*(buc|kg|m|l|h|set|pcs|bucăți)\s*\|\s*([\d.,]+)\s*\|\s*([\d.,]+)\s*\|\s*([\d.,]+)',
+        re.IGNORECASE
+    )
+    
+    # Alternative ROMSTAL pattern without pipes (for other formats)
     # Example: "1 35FV1598 +Invertor monofazat... buc 1,000 3.179,84 3.179,84"
     romstal_pattern = re.compile(
         r'^\d+\s+([A-Z0-9]+)\s+(.+?)\s+(buc|kg|m|l|h|set|pcs|bucăți)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)',
@@ -413,8 +419,12 @@ def extract_line_items(text: str) -> List[Dict]:
         if skip_line:
             continue
         
-        # Try ROMSTAL format first
-        match = romstal_pattern.search(line)
+        # Try ROMSTAL pipe format first (most common)
+        match = romstal_pipe_pattern.search(line)
+        if not match:
+            # Try ROMSTAL non-pipe format
+            match = romstal_pattern.search(line)
+        
         if match:
             try:
                 sku = match.group(1).strip()
