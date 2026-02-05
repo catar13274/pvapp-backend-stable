@@ -1,0 +1,40 @@
+Furnizor: ROMSTAL IMEX SRL
+Nr.ord.reg.com./an: J1994014205403
+C.I.F.: RO5990324
+Sediul: Bucuresti Sector 4, Strada: Sos. Vitan Barzesti nr. 11A, Judetul: Bucuresti
+Capital social: 10.873.200 lei
+BANCA: ING BANK SUC. BUCURESTI
+CONT RON: RO53 INGB 0001 0001 4645 8915
+
+Cumparator:
+ENERGO TEAM CONECT S.R.L.
+Numar client: 857975
+Nr. ord.reg.com./an: J4/315/04.02.2019
+C.I.F.: RO40557010
+Sediul: EP. IOACHIM MARES 101, SAT MAGIRESTI COM. MAGIRESTI, Bacau
+
+ID Plata 30272065
+Facturare normala.
+
+Nr. crt. | Denumirea produselor sau a serviciilor | U.M. | Cant. | Pret unitar (fara TVA) -RON- | Valoarea (fara TVA) -RON- | Valoarea (TVA) -RON-
+
+Aviz: 0854089560 din 03.10.2025
+
+1 | 35FV1598 Invertor monofazat Goodwe, GW5000-ES-20, 5 kW - P2 / taxa verde 25.00 RON | buc | 1,000 | 3.179,84 | 3.179,84 | 667,77
+
+2 | 35FV1667 Modul baterie, Goodwe, Lynx U G3, LV, 5 kWh - P2 | buc | 2,000 | 3.643,94 | 7.287,88 | 1.530,46
+
+3 | 35FV1707 Smart meter, monofazat, GMK110D, AC Couple - M2 / taxa verde 2.00 RON | buc | 1,000 | 289,26 | 289,26 | 60,74
+
+Total aviz: 10.756,98 | 2.258,97
+
+GESTIUNEA ROMSTAL - DEPOZIT VITAN 1V00 JOB_USR
+Scadenta: 03.10.2025
+
+TOTAL: 10.756,98 | 2.258,97
+
+Date privind expeditia:
+Numele delegatului: POPOVICI CORNEL
+Expedierea s-a facut in prezenta noastra la data de 04.10.2025 07:37:10
+
+TOTAL DE PLATA: 13.015,95 RON
