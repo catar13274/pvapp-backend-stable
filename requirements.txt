@@ -2,3 +2,9 @@ fastapi
 uvicorn[standard]
 sqlmodel
 python-dotenv
+httpx
+llama-cpp-python
+pydantic
+requests
+beautifulsoup4
+lxml
