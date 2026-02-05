@@ -209,7 +209,8 @@ async function loadMaterials() {
                             <td>${m.minimum_stock}</td>
                             <td class="action-btns">
                                 <button class="btn btn-success" onclick="viewMaterialPrices(${m.id})">Prices</button>
-                                <button class="btn btn-danger" onclick="deleteMaterial(${m.id})">Delete</button>
+                                <button class="btn btn-primary" onclick="editMaterial(${m.id})">Editează</button>
+                                <button class="btn btn-danger" onclick="deleteMaterial(${m.id})">Șterge</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -270,14 +271,70 @@ async function createMaterial(e) {
     }
 }
 
+async function editMaterial(id) {
+    try {
+        // Get current material data
+        const material = await apiCall(`/api/materials/${id}`);
+        
+        const html = `
+            <h2>Editează Material</h2>
+            <form id="materialEditForm" onsubmit="updateMaterial(event, ${id})">
+                <div class="form-group">
+                    <label>Nume:</label>
+                    <input type="text" name="name" value="${material.name}" required>
+                </div>
+                <div class="form-group">
+                    <label>Categorie:</label>
+                    <input type="text" name="category" value="${material.category}" required>
+                </div>
+                <div class="form-group">
+                    <label>Unitate:</label>
+                    <input type="text" name="unit" value="${material.unit}" required>
+                </div>
+                <div class="form-group">
+                    <label>Stoc Minim:</label>
+                    <input type="number" name="minimum_stock" step="0.01" value="${material.minimum_stock}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Salvează</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Anulează</button>
+            </form>
+        `;
+        showModal(html);
+    } catch (error) {
+        alert('Eroare la încărcarea materialului: ' + error.message);
+    }
+}
+
+async function updateMaterial(e, id) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+        name: formData.get('name'),
+        category: formData.get('category'),
+        unit: formData.get('unit'),
+        minimum_stock: parseFloat(formData.get('minimum_stock'))
+    };
+    
+    try {
+        await apiCall(`/api/materials/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        closeModal();
+        loadMaterials();
+    } catch (error) {
+        alert('Eroare la actualizarea materialului: ' + error.message);
+    }
+}
+
 async function deleteMaterial(id) {
-    if (!confirm('Delete this material?')) return;
+    if (!confirm('Ștergi acest material?')) return;
     
     try {
         await apiCall(`/api/materials/${id}`, { method: 'DELETE' });
         loadMaterials();
     } catch (error) {
-        alert('Error deleting material: ' + error.message);
+        alert('Eroare la ștergerea materialului: ' + error.message);
     }
 }
 
