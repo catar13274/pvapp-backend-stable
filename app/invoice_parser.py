@@ -363,12 +363,27 @@ def extract_invoice_data(text: str, file_type: str) -> Dict:
 def extract_line_items(text: str) -> List[Dict]:
     """
     Extract line items from invoice text
-    Enhanced to handle ROMSTAL format with SKU codes
+    Enhanced to handle ROMSTAL format with SKU codes and filtering
     """
     items = []
     
     # Look for table-like structures
     lines = text.split('\n')
+    
+    # Define patterns to skip (non-product lines)
+    skip_patterns = [
+        r'^\s*(BANCA|CONT|Capital|Sediul|Nr\.ord|C\.I\.F|Numar|TOTAL|Semnatura|Expedierea)',
+        r'^\s*Date privind',
+        r'^\s*(Cumparator|Furnizor):',
+        r'^\s*Scadenta:',
+        r'^\s*GESTIUNEA',
+        r'^\s*Total.*:',
+        r'^\s*Semnatura',
+        r'^\s*Mijloc de transport',
+        r'^\s*Numele delegatului',
+        r'^\s*Buletin',
+        r'^\s*Emis de'
+    ]
     
     # Enhanced pattern for ROMSTAL format: 
     # Line number + SKU + Description + Unit + Quantity + Unit Price + Total
@@ -389,6 +404,15 @@ def extract_line_items(text: str) -> List[Dict]:
         if not line or len(line) < 10:
             continue
         
+        # Skip non-product lines
+        skip_line = False
+        for pattern in skip_patterns:
+            if re.search(pattern, line, re.IGNORECASE):
+                skip_line = True
+                break
+        if skip_line:
+            continue
+        
         # Try ROMSTAL format first
         match = romstal_pattern.search(line)
         if match:
@@ -400,10 +424,16 @@ def extract_line_items(text: str) -> List[Dict]:
                 unit_price_str = match.group(5).replace('.', '').replace(',', '.')
                 total_str = match.group(6).replace('.', '').replace(',', '.')
                 
-                # Clean description
+                # Clean description - remove leading special characters
+                description = re.sub(r'^[\+\-@\*#&\s]+', '', description)  # Remove leading special chars
+                description = re.sub(r'[\+\-@\*#&\s]+$', '', description)  # Remove trailing special chars
                 description = re.sub(r'\s+', ' ', description)  # Remove extra spaces
-                description = re.sub(r'[+\-@]', '', description)  # Remove special chars
+                description = re.sub(r'\bRON\b', '', description, flags=re.IGNORECASE)  # Remove RON
                 description = description.strip()
+                
+                # Skip if description is too short or just unit
+                if len(description) < 3 or description.lower() in ['buc', 'kg', 'm', 'l', 'h', 'set', 'pcs']:
+                    continue
                 
                 # Add SKU to description if both exist
                 if sku and description:
