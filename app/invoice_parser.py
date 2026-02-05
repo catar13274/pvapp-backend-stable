@@ -476,3 +476,206 @@ def fuzzy_match_material(description: str, existing_materials: List[Dict]) -> Op
         return (best_match, best_score)
     
     return None
+
+
+# ============================================================================
+# CSV Parsing and Enhanced Fuzzy Matching Functions
+# ============================================================================
+
+import csv
+import io
+from difflib import get_close_matches, SequenceMatcher
+
+def normalize_string(s: str) -> str:
+    """Normalize string for better matching"""
+    if not s:
+        return ""
+    # Convert to lowercase, remove extra spaces, strip
+    return " ".join(s.lower().strip().split())
+
+
+def match_material_fuzzy(description: str, sku: Optional[str], materials: List[Dict], cutoff: float = 0.6) -> Optional[Dict]:
+    """
+    Match invoice line to material in database using difflib fuzzy matching
+    
+    Args:
+        description: Item description from invoice
+        sku: Optional SKU/code from invoice
+        materials: List of materials from DB (dict with 'id', 'name', 'sku')
+        cutoff: Minimum similarity score (0.0-1.0)
+    
+    Returns:
+        Dict with matched material and confidence score, or None
+    """
+    if not description and not sku:
+        return None
+    
+    # Try SKU exact match first
+    if sku:
+        sku_normalized = normalize_string(sku)
+        for mat in materials:
+            if mat.get('sku') and normalize_string(mat['sku']) == sku_normalized:
+                return {
+                    'material_id': mat['id'],
+                    'material_name': mat['name'],
+                    'material_sku': mat.get('sku'),
+                    'confidence': 1.0,
+                    'match_type': 'sku_exact'
+                }
+    
+    # Try fuzzy match on description
+    if description:
+        desc_normalized = normalize_string(description)
+        material_names = [normalize_string(mat['name']) for mat in materials]
+        
+        matches = get_close_matches(desc_normalized, material_names, n=1, cutoff=cutoff)
+        if matches:
+            # Find the material that matched
+            matched_name = matches[0]
+            for mat in materials:
+                if normalize_string(mat['name']) == matched_name:
+                    # Calculate actual similarity score
+                    confidence = SequenceMatcher(None, desc_normalized, matched_name).ratio()
+                    
+                    return {
+                        'material_id': mat['id'],
+                        'material_name': mat['name'],
+                        'material_sku': mat.get('sku'),
+                        'confidence': confidence,
+                        'match_type': 'description_fuzzy'
+                    }
+    
+    return None
+
+
+def parse_csv(file_content: bytes, column_mapping: Optional[Dict[str, str]] = None, delimiter: str = ',') -> Dict:
+    """
+    Parse CSV invoice file with flexible column mapping
+    
+    Args:
+        file_content: CSV file content as bytes
+        column_mapping: Optional mapping of column names, e.g.:
+            {'sku': 'Cod', 'description': 'Denumire', 'quantity': 'Cantitate', ...}
+        delimiter: CSV delimiter (default: ',', common Romanian: ';')
+    
+    Returns:
+        Dict with extracted invoice data
+    """
+    try:
+        # Decode content
+        text_content = file_content.decode('utf-8-sig')  # Handle BOM
+        
+        # Try to detect delimiter if not specified
+        sample = text_content[:1024]
+        if delimiter == ',' and sample.count(';') > sample.count(','):
+            delimiter = ';'
+        
+        # Parse CSV
+        reader = csv.DictReader(io.StringIO(text_content), delimiter=delimiter)
+        
+        # Get fieldnames
+        fieldnames = reader.fieldnames
+        if not fieldnames:
+            return {"error": "CSV has no headers", "items": []}
+        
+        # Default column mapping (common patterns - English and Romanian)
+        default_mapping = {
+            'sku': ['sku', 'cod', 'code', 'item_code', 'material_code'],
+            'description': ['description', 'denumire', 'nume', 'name', 'produs', 'product'],
+            'quantity': ['quantity', 'qty', 'cantitate', 'cant', 'cant.'],
+            'unit': ['unit', 'um', 'u.m.', 'unitate'],
+            'unit_price': ['unit_price', 'price', 'pret', 'pret_unitar', 'pretunit', 'pret_unit'],
+            'total_price': ['total', 'total_price', 'sum', 'suma', 'valoare']
+        }
+        
+        # Build actual mapping
+        actual_mapping = {}
+        if column_mapping:
+            # Use provided mapping
+            actual_mapping = column_mapping
+        else:
+            # Auto-detect columns
+            for field_type, patterns in default_mapping.items():
+                for fieldname in fieldnames:
+                    fn_normalized = normalize_string(fieldname)
+                    if any(normalize_string(pattern) in fn_normalized or fn_normalized in normalize_string(pattern) 
+                           for pattern in patterns):
+                        actual_mapping[field_type] = fieldname
+                        break
+        
+        # Extract items
+        items = []
+        for row in reader:
+            if not row:
+                continue
+            
+            # Extract fields using mapping
+            item = {}
+            
+            # SKU (optional)
+            if 'sku' in actual_mapping and actual_mapping['sku'] in row:
+                item['sku'] = row[actual_mapping['sku']].strip()
+            
+            # Description (required)
+            if 'description' in actual_mapping and actual_mapping['description'] in row:
+                item['description'] = row[actual_mapping['description']].strip()
+            else:
+                continue  # Skip rows without description
+            
+            # Quantity (required)
+            if 'quantity' in actual_mapping and actual_mapping['quantity'] in row:
+                try:
+                    # Handle Romanian comma decimal separator
+                    qty_str = row[actual_mapping['quantity']].strip().replace(',', '.')
+                    item['quantity'] = float(qty_str)
+                except (ValueError, AttributeError):
+                    continue  # Skip invalid quantity
+            else:
+                continue  # Skip rows without quantity
+            
+            # Unit (optional)
+            if 'unit' in actual_mapping and actual_mapping['unit'] in row:
+                item['unit'] = row[actual_mapping['unit']].strip()
+            
+            # Unit price (optional)
+            if 'unit_price' in actual_mapping and actual_mapping['unit_price'] in row:
+                try:
+                    # Handle Romanian comma decimal separator
+                    price_str = row[actual_mapping['unit_price']].strip().replace(',', '.')
+                    item['unit_price'] = float(price_str)
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Total price (optional)
+            if 'total_price' in actual_mapping and actual_mapping['total_price'] in row:
+                try:
+                    # Handle Romanian comma decimal separator
+                    total_str = row[actual_mapping['total_price']].strip().replace(',', '.')
+                    item['total_price'] = float(total_str)
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Calculate missing values if possible
+            if 'unit_price' in item and 'total_price' not in item:
+                item['total_price'] = item['quantity'] * item['unit_price']
+            elif 'total_price' in item and 'unit_price' not in item and item['quantity'] > 0:
+                item['unit_price'] = item['total_price'] / item['quantity']
+            
+            items.append(item)
+        
+        # Calculate total
+        total_amount = sum(item.get('total_price', 0) for item in items)
+        
+        return {
+            "supplier": None,  # Not available in CSV
+            "invoice_number": None,  # Not available in CSV
+            "invoice_date": None,  # Not available in CSV
+            "total_amount": total_amount if total_amount > 0 else None,
+            "items": items,
+            "detected_columns": list(actual_mapping.keys()),
+            "column_mapping": actual_mapping
+        }
+    
+    except Exception as e:
+        logger.error(f"Error parsing CSV: {e}")
+        return {"error": str(e), "items": []}

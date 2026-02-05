@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from typing import List, Optional
 from sqlmodel import Session, select
 from app import models
 from app.database import get_session
 from pydantic import BaseModel
+import json
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/purchases", tags=["purchases"])
 
@@ -123,3 +128,95 @@ def get_purchase_detail(purchase_id: int, session: Session = Depends(get_session
         })
 
     return {"purchase": purchase, "items": result_items}
+
+
+# ============================================================================
+# CSV Invoice Parsing Endpoint
+# ============================================================================
+
+from fastapi import UploadFile, File, Form
+import json
+from app.invoice_parser import parse_csv, match_material_fuzzy
+
+@router.post("/parse/csv", operation_id="parse_csv_invoice")
+async def parse_csv_invoice(
+    file: UploadFile = File(...),
+    mapping: Optional[str] = Form(None),
+    match_materials: bool = Form(True)
+):
+    """
+    Parse CSV invoice file and optionally match materials
+    
+    Args:
+        file: CSV file upload
+        mapping: Optional JSON string with column mapping, e.g.:
+            '{"sku":"Cod","description":"Denumire","quantity":"Cant","unit_price":"PretUnit"}'
+        match_materials: Whether to fuzzy match items against materials in DB
+    
+    Returns:
+        Parsed invoice data with optional material matches
+    """
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be CSV")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Parse column mapping if provided
+        column_mapping = None
+        if mapping:
+            try:
+                column_mapping = json.loads(mapping)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid JSON in mapping parameter")
+        
+        # Parse CSV
+        result = parse_csv(content, column_mapping=column_mapping)
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        # Match materials if requested
+        if match_materials and result.get("items"):
+            # Get all materials from DB
+            session = next(get_session())
+            materials = session.exec(select(models.Material)).all()
+            
+            # Convert to dict format for matcher
+            materials_list = [
+                {
+                    'id': mat.id,
+                    'name': mat.name,
+                    'sku': mat.sku
+                }
+                for mat in materials
+            ]
+            
+            # Match each item
+            for item in result["items"]:
+                match = match_material_fuzzy(
+                    description=item.get('description'),
+                    sku=item.get('sku'),
+                    materials=materials_list,
+                    cutoff=0.6
+                )
+                item['material_match'] = match
+        
+        return {
+            "success": True,
+            "supplier": result.get("supplier"),
+            "invoice_number": result.get("invoice_number"),
+            "invoice_date": result.get("invoice_date"),
+            "total_amount": result.get("total_amount"),
+            "items_count": len(result.get("items", [])),
+            "items": result.get("items", []),
+            "detected_columns": result.get("detected_columns", []),
+            "column_mapping": result.get("column_mapping", {})
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error parsing CSV invoice: {e}")
+        raise HTTPException(status_code=500, detail=f"Error parsing CSV: {str(e)}")
