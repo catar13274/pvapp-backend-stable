@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from typing import List, Optional
 from sqlmodel import Session, select
 from app import models
 from app.database import get_session
 from pydantic import BaseModel
+from app.parsers.invoice_xml import parse_invoice_products
 
 router = APIRouter(prefix="/api/v1/purchases", tags=["purchases"])
 
@@ -123,3 +124,104 @@ def get_purchase_detail(purchase_id: int, session: Session = Depends(get_session
         })
 
     return {"purchase": purchase, "items": result_items}
+
+@router.post("/upload-xml", status_code=201, operation_id="upload_invoice_xml")
+async def upload_invoice_xml(
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session)
+):
+    """
+    Upload și parsare automată a facturii XML în format UBL (e-Factura RO).
+    Creează automat un purchase cu toate produsele din factură.
+    """
+    if not file.filename.endswith('.xml'):
+        raise HTTPException(status_code=400, detail="Doar fișiere XML sunt acceptate")
+    
+    # Citește conținutul fișierului
+    xml_content = await file.read()
+    
+    try:
+        # Parsează XML-ul
+        invoice_data = parse_invoice_products(xml_content.decode('utf-8'))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Eroare la parsarea XML: {str(e)}")
+    
+    if not invoice_data["products"]:
+        raise HTTPException(status_code=400, detail="Nu s-au găsit produse în factură")
+    
+    # Creează purchase-ul
+    purchase = models.Purchase(
+        supplier=invoice_data["supplier"],
+        invoice_number=invoice_data["invoice_number"],
+        invoice_date=invoice_data["invoice_date"],
+        total_amount=invoice_data["total_amount"]
+    )
+    session.add(purchase)
+    session.commit()
+    session.refresh(purchase)
+    
+    # Creează items pentru fiecare produs
+    created_items = []
+    for product in invoice_data["products"]:
+        # Încearcă să găsești material după SKU
+        material = None
+        if product["sku"]:
+            material = session.exec(
+                select(models.Material).where(models.Material.sku == product["sku"])
+            ).first()
+        
+        # Dacă nu există material, creează unul nou
+        if not material and product["name"]:
+            material = models.Material(
+                sku=product["sku"] or None,
+                name=product["name"],
+                unit=product["unit"]
+            )
+            session.add(material)
+            session.commit()
+            session.refresh(material)
+        
+        # Creează purchase item
+        pi = models.PurchaseItem(
+            purchase_id=purchase.id,
+            material_id=material.id if material else None,
+            sku_raw=product["sku"],
+            sku_clean=product["sku"],
+            description=product["name"],
+            quantity=product["quantity"],
+            unit_price=product["unit_price"],
+            total_price=product["total_price"]
+        )
+        session.add(pi)
+        session.commit()
+        session.refresh(pi)
+        
+        created_items.append({
+            "id": pi.id,
+            "material_id": pi.material_id,
+            "description": pi.description,
+            "quantity": pi.quantity
+        })
+        
+        # Creează stock movement dacă există material
+        if material:
+            sm = models.StockMovement(
+                material_id=material.id,
+                change=product["quantity"],
+                movement_type="purchase_in",
+                reference_type="purchase",
+                reference_id=purchase.id,
+                quantity=product["quantity"]
+            )
+            session.add(sm)
+            session.commit()
+    
+    return {
+        "success": True,
+        "purchase_id": purchase.id,
+        "invoice_number": invoice_data["invoice_number"],
+        "supplier": invoice_data["supplier"],
+        "total_amount": invoice_data["total_amount"],
+        "items_created": len(created_items),
+        "items": created_items
+    }
