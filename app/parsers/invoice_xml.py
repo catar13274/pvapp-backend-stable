@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 from typing import List, Dict, Optional
 
 def parse_invoice_products(xml_content: str) -> Dict:

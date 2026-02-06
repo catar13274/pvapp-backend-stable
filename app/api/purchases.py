@@ -162,6 +162,10 @@ async def upload_invoice_xml(
     
     # Creează items pentru fiecare produs
     created_items = []
+    new_materials = []
+    purchase_items = []
+    stock_movements = []
+    
     for product in invoice_data["products"]:
         # Încearcă să găsești material după SKU
         material = None
@@ -177,9 +181,23 @@ async def upload_invoice_xml(
                 name=product["name"],
                 unit=product["unit"]
             )
+            new_materials.append(material)
             session.add(material)
-            session.commit()
+    
+    # Commit toate materialele noi odată
+    if new_materials:
+        session.commit()
+        for material in new_materials:
             session.refresh(material)
+    
+    # Creează purchase items și stock movements
+    for product in invoice_data["products"]:
+        # Re-caută materialul după SKU
+        material = None
+        if product["sku"]:
+            material = session.exec(
+                select(models.Material).where(models.Material.sku == product["sku"])
+            ).first()
         
         # Creează purchase item
         pi = models.PurchaseItem(
@@ -192,16 +210,8 @@ async def upload_invoice_xml(
             unit_price=product["unit_price"],
             total_price=product["total_price"]
         )
+        purchase_items.append(pi)
         session.add(pi)
-        session.commit()
-        session.refresh(pi)
-        
-        created_items.append({
-            "id": pi.id,
-            "material_id": pi.material_id,
-            "description": pi.description,
-            "quantity": pi.quantity
-        })
         
         # Creează stock movement dacă există material
         if material:
@@ -213,8 +223,19 @@ async def upload_invoice_xml(
                 reference_id=purchase.id,
                 quantity=product["quantity"]
             )
+            stock_movements.append(sm)
             session.add(sm)
-            session.commit()
+    
+    # Commit toate purchase items și stock movements odată
+    session.commit()
+    for pi in purchase_items:
+        session.refresh(pi)
+        created_items.append({
+            "id": pi.id,
+            "material_id": pi.material_id,
+            "description": pi.description,
+            "quantity": pi.quantity
+        })
     
     return {
         "success": True,
