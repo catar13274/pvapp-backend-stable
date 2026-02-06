@@ -165,7 +165,9 @@ async def upload_invoice_xml(
     new_materials = []
     purchase_items = []
     stock_movements = []
+    material_cache = {}  # Cache pentru a evita query-uri redundante
     
+    # Prima trecere: caută materialele existente și creează cele noi
     for product in invoice_data["products"]:
         # Încearcă să găsești material după SKU
         material = None
@@ -173,6 +175,8 @@ async def upload_invoice_xml(
             material = session.exec(
                 select(models.Material).where(models.Material.sku == product["sku"])
             ).first()
+            if material:
+                material_cache[product["sku"]] = material
         
         # Dacă nu există material, creează unul nou
         if not material and product["name"]:
@@ -181,23 +185,21 @@ async def upload_invoice_xml(
                 name=product["name"],
                 unit=product["unit"]
             )
-            new_materials.append(material)
+            new_materials.append((product["sku"], material))
             session.add(material)
     
     # Commit toate materialele noi odată
     if new_materials:
         session.commit()
-        for material in new_materials:
+        for sku, material in new_materials:
             session.refresh(material)
+            if sku:
+                material_cache[sku] = material
     
-    # Creează purchase items și stock movements
+    # A doua trecere: creează purchase items și stock movements
     for product in invoice_data["products"]:
-        # Re-caută materialul după SKU
-        material = None
-        if product["sku"]:
-            material = session.exec(
-                select(models.Material).where(models.Material.sku == product["sku"])
-            ).first()
+        # Folosește cache-ul pentru a obține materialul
+        material = material_cache.get(product["sku"]) if product["sku"] else None
         
         # Creează purchase item
         pi = models.PurchaseItem(
