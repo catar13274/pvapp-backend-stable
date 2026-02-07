@@ -17,6 +17,26 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Upload facturi XML (e-Factura UBL)
+
+Aplicația suportă upload automat de facturi în format XML (e-Factura RO standard UBL).
+
+**Endpoint:** `POST /api/v1/purchases/upload-xml`
+
+**Exemplu curl:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/purchases/upload-xml" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@factura.xml"
+```
+
+Funcționalități:
+- Parsare automată facturi UBL XML
+- Extragere automată produse, cantități, prețuri
+- Creare automată materiale noi dacă nu există
+- Actualizare automată stoc
+
+License: MIT
 Initialize DB and run:
 ```bash
 export PVAPP_DB_URL="sqlite:///./db.sqlite3"
