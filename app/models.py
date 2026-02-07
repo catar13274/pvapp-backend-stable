@@ -37,3 +37,25 @@ class StockMovement(SQLModel, table=True):
     reference_id: Optional[int] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     quantity: Optional[float] = None
+
+class Invoice(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    supplier: Optional[str] = None
+    invoice_number: Optional[str] = None
+    invoice_date: Optional[str] = None
+    total_amount: Optional[float] = None
+    status: str = "PENDING"  # PENDING, VALIDATED, CONFIRMED
+    filename: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class InvoiceItem(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    invoice_id: int = Field(foreign_key="invoice.id")
+    material_id: Optional[int] = Field(default=None, foreign_key="material.id")
+    description: Optional[str] = None
+    quantity: float = 0.0
+    unit: Optional[str] = None
+    unit_price: Optional[float] = None
+    total_price: Optional[float] = None
+    suggested_material_id: Optional[int] = None
+    match_confidence: Optional[float] = None
