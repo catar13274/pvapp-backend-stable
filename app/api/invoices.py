@@ -8,6 +8,9 @@ import xml.etree.ElementTree as ET
 from difflib import SequenceMatcher
 import io
 
+# Constants
+MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 
 # Pydantic models for request/response
@@ -64,16 +67,15 @@ def similarity_ratio(a: str, b: str) -> float:
         return 0.0
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
-def find_best_material_match(description: str, session: Session) -> tuple[Optional[int], float]:
-    """Find the best matching material for a given description"""
+def find_best_material_match(description: str, materials_cache: List[models.Material]) -> tuple[Optional[int], float]:
+    """Find the best matching material for a given description using cached materials"""
     if not description:
         return None, 0.0
     
-    materials = session.exec(select(models.Material)).all()
     best_match = None
     best_score = 0.0
     
-    for material in materials:
+    for material in materials_cache:
         if material.name:
             score = similarity_ratio(description, material.name)
             if score > best_score:
@@ -159,7 +161,7 @@ def parse_xml_invoice(file_content: bytes) -> dict:
                             pass
                 
                 # Calculate total_price if not present
-                if item_data['total_price'] is None and item_data['unit_price'] is not None:
+                if item_data['total_price'] is None and item_data['unit_price'] is not None and item_data['quantity'] > 0:
                     item_data['total_price'] = item_data['quantity'] * item_data['unit_price']
                 
                 if item_data['description'] or item_data['quantity'] > 0:
@@ -223,7 +225,7 @@ async def upload_invoice(
     """Upload and parse invoice file"""
     # Validate file size (max 10MB)
     file_content = await file.read()
-    if len(file_content) > 10 * 1024 * 1024:
+    if len(file_content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
     
     # Determine file type and parse accordingly
@@ -252,12 +254,15 @@ async def upload_invoice(
     session.commit()
     session.refresh(invoice)
     
+    # Load all materials once for efficient matching
+    materials_cache = session.exec(select(models.Material)).all()
+    
     # Create invoice items with material matching
     items = []
     for item_data in invoice_data.get('items', []):
         # Find best matching material
         suggested_material_id, match_confidence = find_best_material_match(
-            item_data.get('description', ''), session
+            item_data.get('description', ''), materials_cache
         )
         
         invoice_item = models.InvoiceItem(
@@ -271,9 +276,13 @@ async def upload_invoice(
             match_confidence=match_confidence
         )
         session.add(invoice_item)
-        session.commit()
-        session.refresh(invoice_item)
         items.append(invoice_item)
+    
+    # Commit all items at once for better performance
+    if items:
+        session.commit()
+        for item in items:
+            session.refresh(item)
     
     # Return response in expected format
     return {
