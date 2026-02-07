@@ -2,6 +2,5 @@ fastapi
 uvicorn[standard]
 sqlmodel
 python-dotenv
-PyPDF2
-python-docx
+httpx
 python-multipart
