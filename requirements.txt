@@ -4,3 +4,5 @@ sqlmodel
 python-dotenv
 python-multipart
 defusedxml
+httpx
+python-multipart
