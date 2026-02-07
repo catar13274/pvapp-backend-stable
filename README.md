@@ -21,20 +21,21 @@ pip install -r requirements.txt
 
 Aplicația suportă upload automat de facturi în format XML (e-Factura RO standard UBL).
 
-**Endpoint:** `POST /api/v1/purchases/upload-xml`
+**Endpoint:** `POST /api/invoices/upload`
 
 **Exemplu curl:**
 ```bash
-curl -X POST "http://localhost:8000/api/v1/purchases/upload-xml" \
+curl -X POST "http://localhost:8000/api/invoices/upload" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@factura.xml"
 ```
 
 Funcționalități:
-- Parsare automată facturi UBL XML
+- Parsare automată facturi UBL XML via microservice
 - Extragere automată produse, cantități, prețuri
-- Creare automată materiale noi dacă nu există
-- Actualizare automată stoc
+- Creare automată înregistrări Purchase și PurchaseItem
+- Protecție împotriva atacurilor XXE (defusedxml)
+
 
 License: MIT
 Initialize DB and run:
@@ -47,6 +48,35 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ### 2. XML Parser Microservice Setup (Optional)
 
 The XML parser microservice enables robust parsing of UBL XML invoice files using defusedxml to prevent XXE attacks.
+
+#### Production Setup with systemd
+
+For production deployments, run the XML parser as a systemd service:
+
+1. **Install the service file:**
+```bash
+sudo cp pvapp-xml-parser.service /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+2. **Configure environment variables:**
+Add to your `.env` file:
+```bash
+XML_PARSER_URL=http://localhost:5000
+XML_PARSER_TOKEN=my-secret-token
+```
+
+3. **Start and enable the service:**
+```bash
+sudo systemctl enable pvapp-xml-parser
+sudo systemctl start pvapp-xml-parser
+```
+
+4. **Check service status:**
+```bash
+sudo systemctl status pvapp-xml-parser
+sudo journalctl -u pvapp-xml-parser -f
+```
 
 #### Local Development with Docker
 
@@ -92,7 +122,7 @@ export XML_PARSER_TOKEN=your-secret-token  # Optional, must match parser token
 
 Upload an XML invoice:
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/invoices/upload \
+curl -X POST http://127.0.0.1:8000/api/invoices/upload \
   -F "file=@services/xml_parser/tests/sample_invoice.xml"
 ```
 
@@ -102,6 +132,19 @@ curl -sS http://127.0.0.1:8000/api/v1/purchases/ | jq .
 ```
 
 OpenAPI documentation: http://127.0.0.1:8000/docs
+
+## Updating the Application
+
+Use the provided update script to pull changes and restart services:
+```bash
+./update.sh
+```
+
+This will:
+- Pull latest changes from git
+- Update dependencies for both backend and XML parser
+- Restart the pvapp service (if running)
+- Restart the pvapp-xml-parser service (if running)
 
 ## Security Notes
 
@@ -129,7 +172,7 @@ OpenAPI documentation: http://127.0.0.1:8000/docs
 
 ## XML Invoice Upload Flow
 
-1. Client uploads XML invoice to `/api/v1/invoices/upload`
+1. Client uploads XML invoice to `/api/invoices/upload`
 2. Backend detects XML file (by extension or MIME type)
 3. Backend sends XML to parser microservice
 4. Parser extracts invoice metadata and line items using namespace-aware traversal

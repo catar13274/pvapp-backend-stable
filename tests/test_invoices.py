@@ -100,7 +100,7 @@ def test_root_endpoint(client):
 def test_invoice_health_endpoint_without_parser(client):
     """Test invoice health endpoint when parser is not configured."""
     with patch('app.config.config.XML_PARSER_URL', None):
-        response = client.get("/api/v1/invoices/health")
+        response = client.get("/api/invoices/health")
         assert response.status_code == 200
         data = response.json()
         assert data['status'] == 'healthy'
@@ -110,7 +110,7 @@ def test_invoice_health_endpoint_without_parser(client):
 def test_invoice_health_endpoint_with_parser(client):
     """Test invoice health endpoint when parser is configured."""
     with patch('app.config.config.XML_PARSER_URL', 'http://localhost:5000'):
-        response = client.get("/api/v1/invoices/health")
+        response = client.get("/api/invoices/health")
         assert response.status_code == 200
         data = response.json()
         assert data['status'] == 'healthy'
@@ -121,7 +121,7 @@ def test_invoice_health_endpoint_with_parser(client):
 def test_upload_empty_file(client):
     """Test uploading an empty file."""
     response = client.post(
-        "/api/v1/invoices/upload",
+        "/api/invoices/upload",
         files={"file": ("empty.xml", b"", "application/xml")}
     )
     assert response.status_code == 400
@@ -131,7 +131,7 @@ def test_upload_empty_file(client):
 def test_upload_non_xml_file(client):
     """Test uploading a non-XML file."""
     response = client.post(
-        "/api/v1/invoices/upload",
+        "/api/invoices/upload",
         files={"file": ("test.pdf", b"dummy pdf content", "application/pdf")}
     )
     assert response.status_code == 400
@@ -142,7 +142,7 @@ def test_upload_xml_without_parser_configured(client, sample_xml):
     """Test uploading XML when parser service is not configured."""
     with patch('app.config.config.XML_PARSER_URL', None):
         response = client.post(
-            "/api/v1/invoices/upload",
+            "/api/invoices/upload",
             files={"file": ("invoice.xml", sample_xml, "application/xml")}
         )
         assert response.status_code == 503
@@ -167,7 +167,7 @@ async def test_upload_xml_with_parser_success(client, session, sample_xml, mock_
         with patch('httpx.AsyncClient') as mock_client_class:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             response = client.post(
-                "/api/v1/invoices/upload",
+                "/api/invoices/upload",
                 files={"file": ("test_invoice.xml", sample_xml, "application/xml")}
             )
     
@@ -213,7 +213,7 @@ async def test_upload_xml_parser_auth_failure(client, sample_xml):
         with patch('httpx.AsyncClient') as mock_client_class:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             response = client.post(
-                "/api/v1/invoices/upload",
+                "/api/invoices/upload",
                 files={"file": ("test_invoice.xml", sample_xml, "application/xml")}
             )
     
@@ -236,7 +236,7 @@ async def test_upload_xml_parser_error(client, sample_xml):
         with patch('httpx.AsyncClient') as mock_client_class:
             mock_client_class.return_value.__aenter__.return_value = mock_client
             response = client.post(
-                "/api/v1/invoices/upload",
+                "/api/invoices/upload",
                 files={"file": ("test_invoice.xml", sample_xml, "application/xml")}
             )
     
