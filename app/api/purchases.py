@@ -33,7 +33,7 @@ class PurchaseItemRead(BaseModel):
     unit_price: Optional[float]
     total_price: Optional[float]
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PurchaseRead(BaseModel):
     id: int
@@ -43,7 +43,7 @@ class PurchaseRead(BaseModel):
     total_amount: Optional[float]
     created_at: str
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 @router.get("/", response_model=List[PurchaseRead], operation_id="list_purchases")
 def list_purchases(session: Session = Depends(get_session)):
