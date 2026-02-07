@@ -65,6 +65,9 @@ async def call_xml_parser(xml_content: bytes, filename: str) -> dict:
                     detail=f"Parser service error: {error_detail}"
                 )
                 
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
     except httpx.TimeoutException:
         logger.error(f"Timeout calling XML parser for {filename}")
         raise HTTPException(status_code=504, detail="Parser service timeout")
