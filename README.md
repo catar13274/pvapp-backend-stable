@@ -53,26 +53,34 @@ The XML parser microservice enables robust parsing of UBL XML invoice files usin
 
 For production deployments, run the XML parser as a systemd service:
 
-1. **Install the service file:**
+1. **Create a dedicated service user (recommended for security):**
+```bash
+sudo useradd -r -s /bin/false pvapp
+sudo chown -R pvapp:pvapp /opt/pvapp
+```
+
+2. **Install the service file:**
 ```bash
 sudo cp pvapp-xml-parser.service /etc/systemd/system/
 sudo systemctl daemon-reload
 ```
 
-2. **Configure environment variables:**
+3. **Configure environment variables:**
 Add to your `.env` file:
 ```bash
 XML_PARSER_URL=http://localhost:5000
 XML_PARSER_TOKEN=my-secret-token
 ```
 
-3. **Start and enable the service:**
+Note: The service binds to `127.0.0.1:5000` for local-only access, enhancing security.
+
+4. **Start and enable the service:**
 ```bash
 sudo systemctl enable pvapp-xml-parser
 sudo systemctl start pvapp-xml-parser
 ```
 
-4. **Check service status:**
+5. **Check service status:**
 ```bash
 sudo systemctl status pvapp-xml-parser
 sudo journalctl -u pvapp-xml-parser -f

@@ -9,9 +9,23 @@ echo ""
 # Change to the script's directory
 cd "$(dirname "$0")"
 
+# Check if virtual environment exists
+if [ ! -f .venv/bin/activate ]; then
+    echo "Error: Virtual environment not found at .venv/bin/activate"
+    echo "Please create a virtual environment first:"
+    echo "  python3 -m venv .venv"
+    echo "  source .venv/bin/activate"
+    echo "  pip install -r requirements.txt"
+    exit 1
+fi
+
 # Update main backend
 echo "1. Pulling latest changes from git..."
-git pull
+if ! git pull; then
+    echo "Error: Failed to pull changes from git"
+    echo "Please resolve any conflicts manually and run the script again"
+    exit 1
+fi
 
 echo ""
 echo "2. Installing/updating backend dependencies..."
