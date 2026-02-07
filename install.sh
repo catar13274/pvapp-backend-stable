@@ -92,7 +92,7 @@ install_system_dependencies() {
     
     # Update apt package list
     print_info "Updating apt package list..."
-    sudo apt-get update -qq
+    sudo apt-get update -q
     print_success "Package list updated"
     
     # Install required packages
@@ -151,7 +151,12 @@ install_application() {
     
     # Make scripts executable
     print_info "Making scripts executable..."
-    sudo chmod +x run.sh update.sh
+    if [ -f run.sh ]; then
+        sudo chmod +x run.sh
+    fi
+    if [ -f update.sh ]; then
+        sudo chmod +x update.sh
+    fi
     print_success "Scripts are now executable"
 }
 
@@ -160,11 +165,16 @@ initialize_database() {
     
     cd "$INSTALL_DIR"
     
-    # Set database URL
-    export PVAPP_DB_URL="sqlite:///./db.sqlite3"
+    # Set database URL (use absolute path for consistency)
+    export PVAPP_DB_URL="sqlite:///$INSTALL_DIR/db.sqlite3"
     
-    # Initialize database
-    sudo -E .venv/bin/python -c "from app.database import init_db; init_db()"
+    # Initialize database with error handling
+    if ! sudo -E .venv/bin/python -c "from app.database import init_db; init_db()" 2>/dev/null; then
+        print_error "Database initialization failed"
+        print_info "This may be due to missing dependencies or database import errors"
+        print_info "Try running manually: cd $INSTALL_DIR && source .venv/bin/activate && python -c 'from app.database import init_db; init_db()'"
+        exit 1
+    fi
     print_success "Database initialized"
 }
 
@@ -176,7 +186,7 @@ create_env_file() {
     # Create .env file with default values
     sudo tee .env > /dev/null <<EOF
 # Database Configuration
-PVAPP_DB_URL=sqlite:///./db.sqlite3
+PVAPP_DB_URL=sqlite:///$INSTALL_DIR/db.sqlite3
 
 # XML Parser Microservice Configuration
 XML_PARSER_URL=http://localhost:5000
@@ -204,7 +214,7 @@ Type=simple
 User=$PVAPP_USER
 WorkingDirectory=$INSTALL_DIR
 Environment="PATH=$INSTALL_DIR/.venv/bin"
-Environment="PVAPP_DB_URL=sqlite:///$INSTALL_DIR/db.sqlite3"
+EnvironmentFile=$INSTALL_DIR/.env
 ExecStart=$INSTALL_DIR/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=10
