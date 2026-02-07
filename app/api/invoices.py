@@ -12,7 +12,7 @@ from app.config import config
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/invoices", tags=["invoices"])
+router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 
 
 async def call_xml_parser(xml_content: bytes, filename: str) -> dict:
